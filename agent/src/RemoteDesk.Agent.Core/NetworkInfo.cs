@@ -1,0 +1,56 @@
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+
+namespace RemoteDesk.Agent.Core;
+
+/// <summary>Адреса ПК в локальных сетях и MAC-адреса сетевых карт (для Wake-on-LAN).</summary>
+public static class NetworkInfo
+{
+    // Виртуальные адаптеры (VirtualBox, Hyper-V, VPN) телефону не нужны: через них он ПК не увидит.
+    static readonly string[] VirtualMarkers =
+        ["virtual", "vmware", "hyper-v", "vbox", "npcap", "loopback", "tap-", "wireguard", "tailscale", "zerotier", "wintun", "bluetooth"];
+
+    public static IReadOnlyList<MacInfo> Interfaces()
+    {
+        var result = new List<MacInfo>();
+        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            if (nic.OperationalStatus != OperationalStatus.Up
+                || nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel
+                || VirtualMarkers.Any(m => nic.Description.Contains(m, StringComparison.OrdinalIgnoreCase)
+                                           || nic.Name.Contains(m, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var wired = nic.NetworkInterfaceType is NetworkInterfaceType.Ethernet
+                or NetworkInterfaceType.GigabitEthernet or NetworkInterfaceType.FastEthernetT
+                or NetworkInterfaceType.FastEthernetFx or NetworkInterfaceType.Ethernet3Megabit;
+            var mac = FormatMac(nic.GetPhysicalAddress());
+
+            foreach (var address in nic.GetIPProperties().UnicastAddresses)
+            {
+                var ip = address.Address;
+                if (ip.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(ip) || IsLinkLocal(ip))
+                    continue;
+                result.Add(new MacInfo(mac, nic.Name, ip.ToString(), wired));
+            }
+        }
+        // Проводные сначала: по кабелю связь надёжнее, и только через кабель обычно работает WoL.
+        return result.OrderByDescending(m => m.Wired).ToList();
+    }
+
+    public static IReadOnlyList<string> Addresses() => Interfaces().Select(i => i.Ip).Distinct().ToList();
+
+    static bool IsLinkLocal(IPAddress ip) => ip.GetAddressBytes() is [169, 254, ..];
+
+    static string FormatMac(PhysicalAddress address) =>
+        string.Join(':', address.GetAddressBytes().Select(b => b.ToString("X2")));
+
+    public static string OsDescription()
+    {
+        if (!OperatingSystem.IsWindows())
+            return System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+        var build = Environment.OSVersion.Version.Build;
+        return $"Windows {(build >= 22000 ? "11" : "10")} (сборка {build})";
+    }
+}

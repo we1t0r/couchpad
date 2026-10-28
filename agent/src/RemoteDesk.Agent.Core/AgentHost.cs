@@ -1,6 +1,7 @@
 namespace RemoteDesk.Agent.Core;
 
-public sealed record AgentOptions(string DataDir, int Port = Protocol.DefaultPort, bool Mdns = true)
+/// <param name="Loopback">Слушать только 127.0.0.1 — для разработки и тестов (без окна брандмауэра).</param>
+public sealed record AgentOptions(string DataDir, int Port = Protocol.DefaultPort, bool Mdns = true, bool Loopback = false)
 {
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
@@ -18,7 +19,7 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     public async Task StartAsync(CancellationToken ct = default)
     {
         Server = new AgentServer(Identity, Devices, Secrets, Info);
-        await Server.StartAsync(options.Port, ct);
+        await Server.StartAsync(options.Port, options.Loopback, ct);
         if (options.Mdns)
             mdns = new MdnsAdvertiser(Identity, Server.Port, NetworkInfo.Addresses());
     }

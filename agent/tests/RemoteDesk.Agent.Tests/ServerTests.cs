@@ -13,7 +13,7 @@ public sealed class ServerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false));
+        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true));
         await host.StartAsync();
     }
 
@@ -36,14 +36,13 @@ public sealed class ServerTests : IAsyncLifetime
     static async Task SendAsync(ClientWebSocket ws, string text) =>
         await ws.SendAsync(Encoding.UTF8.GetBytes(text), WebSocketMessageType.Text, true, CancellationToken.None);
 
-    static async Task<JsonObject?> ReceiveAsync(ClientWebSocket ws)
+    static async Task<JsonObject> ReceiveAsync(ClientWebSocket ws)
     {
         var buffer = new byte[64 * 1024];
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var result = await ws.ReceiveAsync(buffer, cts.Token);
-        return result.MessageType == WebSocketMessageType.Close
-            ? null
-            : JsonNode.Parse(Encoding.UTF8.GetString(buffer, 0, result.Count))!.AsObject();
+        Assert.NotEqual(WebSocketMessageType.Close, result.MessageType);
+        return JsonNode.Parse(Encoding.UTF8.GetString(buffer, 0, result.Count))!.AsObject();
     }
 
     async Task<string> PairAsync(string deviceId = "phone-1")
@@ -187,7 +186,7 @@ public sealed class ServerTests : IAsyncLifetime
         var fp = host.Identity.Fingerprint;
         await host.DisposeAsync();
 
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false));
+        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true));
         await host.StartAsync();
 
         Assert.Equal(id, host.Identity.Id);

@@ -35,12 +35,12 @@ public sealed class AgentServer(AgentIdentity identity, PairingStore devices, Pa
     public IReadOnlyCollection<string> ConnectedDeviceIds =>
         sessions.Keys.Where(s => s.DeviceId is not null).Select(s => s.DeviceId!).Distinct().ToList();
 
-    public async Task StartAsync(int port, CancellationToken ct = default)
+    public async Task StartAsync(int port, bool loopback = false, CancellationToken ct = default)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(k =>
-            k.Listen(IPAddress.Any, port, listen => listen.UseHttps(identity.Certificate)));
+            k.Listen(loopback ? IPAddress.Loopback : IPAddress.Any, port, listen => listen.UseHttps(identity.Certificate)));
 
         app = builder.Build();
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
@@ -48,7 +48,7 @@ public sealed class AgentServer(AgentIdentity identity, PairingStore devices, Pa
         await app.StartAsync(ct);
 
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
-        Port = new Uri(address.Replace("0.0.0.0", "localhost")).Port;
+        Port = new Uri(address.Replace("0.0.0.0", "localhost").Replace("[::]", "localhost")).Port;
     }
 
     async Task HandleAsync(HttpContext ctx)

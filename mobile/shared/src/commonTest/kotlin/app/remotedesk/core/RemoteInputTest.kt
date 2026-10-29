@@ -6,10 +6,30 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RemoteInputTest {
-    private val sent = mutableListOf<String>()
-    private val input = RemoteInput { text, _ -> sent += text }
+    private val queue = mutableListOf<Any>()
+    private val input = RemoteInput { queue += it }
+
+    /** Что ушло бы в сеть: очередь, прогнанная через resolve, как это делает AgentConnection. */
+    private val sent: List<String> by lazy { queue.mapNotNull { input.resolve(it) } }
 
     private fun texts() = sent.map { parseMessage(it)!!.str("s") }
+
+    @Test
+    fun moves_waiting_in_queue_are_merged_but_keep_order() {
+        input.move(1f, 0f)
+        input.move(2f, 0.5f) // пока первое движение не ушло, второе прибавляется к нему
+        input.button(MouseButton.Left, false)
+        input.move(-1f, 0f)
+
+        assertEquals(
+            listOf(
+                """{"t":"move","dx":3.0,"dy":0.5}""",
+                """{"t":"button","b":"left","down":false}""",
+                """{"t":"move","dx":-1.0,"dy":0.0}""",
+            ),
+            sent,
+        )
+    }
 
     @Test
     fun relay_types_appended_text_and_backspaces_edits() {

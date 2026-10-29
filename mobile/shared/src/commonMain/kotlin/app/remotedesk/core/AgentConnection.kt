@@ -14,7 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,26 +81,22 @@ class AgentConnection private constructor(
     /** null, пока соединение живо; иначе — почему закрылось. */
     val closed: StateFlow<AgentException?> = _closed.asStateFlow()
 
-    // Ввод идёт через очередь: интерфейс не ждёт сети. Если сеть встала, лишние движения отбрасываются,
-    // а нажатия и отпускания — никогда (иначе на ПК «залипнет» кнопка).
-    private val outbox = Channel<String>(Channel.UNLIMITED)
-    private val queued = MutableStateFlow(0)
+    // Ввод идёт через очередь: интерфейс не ждёт сети. Движения в ней складываются (см. RemoteInput),
+    // поэтому очередь не разрастается, а нажатия и отпускания не теряются никогда.
+    private val outbox = Channel<Any>(Channel.UNLIMITED)
 
     /** Мышь и клавиатура ПК. */
-    val input = RemoteInput { text, droppable ->
-        if (!droppable || queued.value <= MAX_QUEUED_MOVES) enqueue(text)
-    }
+    val input = RemoteInput(::enqueue)
 
-    private fun enqueue(text: String) {
-        queued.update { it + 1 }
-        outbox.trySend(text)
+    private fun enqueue(item: Any) {
+        outbox.trySend(item)
     }
 
     init {
         scope.launch { readLoop() }
         scope.launch {
-            for (text in outbox) {
-                queued.update { it - 1 }
+            for (item in outbox) {
+                val text = input.resolve(item) ?: continue
                 try {
                     session.send(Frame.Text(text))
                 } catch (e: CancellationException) {
@@ -179,7 +174,6 @@ class AgentConnection private constructor(
 
     companion object {
         private const val CONNECT_TIMEOUT_MS = 4_000L
-        private const val MAX_QUEUED_MOVES = 64
 
         /** Сопряжение по ссылке из QR-кода. */
         suspend fun pair(link: PairingLink, device: DeviceInfo): Paired {

@@ -3,12 +3,15 @@ package app.remotedesk.core
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
+import java.net.InetAddress
+import java.net.Socket
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import java.util.Base64
 import java.util.concurrent.TimeUnit
+import javax.net.SocketFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 
@@ -19,6 +22,7 @@ internal actual fun pinnedHttpClient(fingerprint: String, onMismatch: () -> Unit
         install(WebSockets)
         engine {
             config {
+                socketFactory(NoDelaySocketFactory)
                 sslSocketFactory(ssl.socketFactory, trust)
                 // Имя хоста не проверяем: агент живёт по IP, доверие — только по отпечатку.
                 hostnameVerifier { _, _ -> true }
@@ -28,6 +32,25 @@ internal actual fun pinnedHttpClient(fingerprint: String, onMismatch: () -> Unit
             }
         }
     }
+}
+
+/**
+ * Сокеты без алгоритма Нейгла: каждое движение мыши уходит сразу, а не копится до подтверждения
+ * предыдущего пакета. Иначе вместе с отложенным подтверждением Windows курсор отстаёт на десятки
+ * и сотни миллисекунд.
+ */
+private object NoDelaySocketFactory : SocketFactory() {
+    private val system = getDefault()
+
+    private fun Socket.noDelay() = apply { tcpNoDelay = true }
+
+    override fun createSocket(): Socket = system.createSocket().noDelay()
+    override fun createSocket(host: String?, port: Int): Socket = system.createSocket(host, port).noDelay()
+    override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int): Socket =
+        system.createSocket(host, port, localHost, localPort).noDelay()
+    override fun createSocket(host: InetAddress?, port: Int): Socket = system.createSocket(host, port).noDelay()
+    override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int): Socket =
+        system.createSocket(address, port, localAddress, localPort).noDelay()
 }
 
 /** SHA-256 от DER-сертификата в base64url без «=» — как в агенте. */

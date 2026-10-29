@@ -28,10 +28,11 @@ public sealed class NullInput : IInputSink
 }
 
 /// <summary>
-/// Записывает ввод строками вместо настоящих мыши и клавиатуры: для тестов и режима разработки
-/// (<c>--input-log файл</c>), чтобы автотест не дёргал курсор на ПК разработчика.
+/// Записывает ввод и команды питания строками вместо настоящих мыши, клавиатуры и выключения:
+/// для тестов и режима разработки (<c>--input-log файл</c>), чтобы автотест не дёргал курсор
+/// и тем более не выключал ПК разработчика.
 /// </summary>
-public sealed class RecordingInput(string? logFile = null) : IInputSink
+public sealed class RecordingInput(string? logFile = null) : IInputSink, IPowerSink
 {
     readonly List<string> lines = [];
 
@@ -45,6 +46,9 @@ public sealed class RecordingInput(string? logFile = null) : IInputSink
     public void Wheel(int vertical, int horizontal) => Add($"wheel {vertical} {horizontal}");
     public void Key(ushort vk, bool down) => Add($"key 0x{vk:X2} {(down ? "down" : "up")}");
     public void Text(string text) => Add($"text {text}");
+
+    public void Execute(PowerAction action, bool force, bool keepMonitorsOff) =>
+        Add($"power {action.Name()}{(force ? " force" : "")}{(keepMonitorsOff ? " keep" : "")}");
 
     void Add(string line)
     {

@@ -154,4 +154,37 @@
     <string name="s_strip_title">Scroll strip</string>
     <string name="s_strip_sub">A narrow strip at the touchpad edge for one-finger scrolling</string>
     <string name="s_strip_info">Slide a finger up and down the strip to scroll, like a mouse wheel. Handy when holding the phone in one hand. Default: on.</string>
+
+    <string name="tab_power">Power</string>
+    <string name="pw_shutdown">Shut down</string>
+    <string name="pw_restart">Restart</string>
+    <string name="pw_sleep">Sleep</string>
+    <string name="pw_hibernate">Hibernate</string>
+    <string name="pw_lock">Lock</string>
+    <string name="pw_signout">Sign out</string>
+    <string name="pw_monitors_off">Turn off monitors</string>
+    <string name="pw_monitors_on">Turn on monitors</string>
+    <string name="pw_monitors_hint_any">The computer keeps running: music, downloads and games are not interrupted. The monitors wake up on touchpad or mouse movement or a key press on the PC.</string>
+    <string name="pw_monitors_hint_app">The computer keeps running. The monitors wake up only with the “Turn on monitors” button or a key on the PC keyboard — an accidental mouse bump won’t wake them.</string>
+    <string name="pw_later">Later…</string>
+    <string name="pw_computer">Computer</string>
+    <string name="pw_timer">Timer</string>
+    <string name="pw_note">A minute before shutting down, restarting or sleeping, a window with a Cancel button appears on the computer.</string>
+    <string name="pw_in">in %1$s</string>
+    <string name="pw_when">When</string>
+    <string name="pw_now">Now</string>
+    <string name="pw_minutes">%1$s min</string>
+    <string name="pw_force">Force</string>
+    <string name="pw_force_off">Windows politely asks programs to close. If something is unsaved, the program asks whether to save it and the computer waits for an answer — so it may never shut down if nobody is there.</string>
+    <string name="pw_force_on">Programs close without asking. Unsaved documents are lost — only use this if you are sure.</string>
+    <string name="pw_timer_note">You can cancel the timer here in the app or on the computer — in the RemoteDesk icon menu.</string>
+    <string name="pw_set_timer">Set timer</string>
+
+    <string name="settings_power">Power</string>
+    <string name="s_confirm_title">Ask before shutting down</string>
+    <string name="s_confirm_sub">Shut down, restart, sleep and sign out ask for confirmation</string>
+    <string name="s_confirm_info">Before shutting down, restarting, sleeping, hibernating or signing out, the app asks if you are sure and lets you pick a time. Without confirmation the buttons work instantly — handy, but easy to mis-tap. Lock and monitors never ask. Default: on.</string>
+    <string name="s_wake_title">Wake monitors only with the button</string>
+    <string name="s_wake_sub">An accidental mouse movement won’t turn the monitors back on</string>
+    <string name="s_wake_info">Normally, turned-off monitors wake up on any mouse movement — including bumping the mouse at night or sliding on the touchpad. With this setting only the “Turn on monitors” button in the app wakes them. Any key on the computer keyboard always wakes them, so the computer stays usable without the phone. Default: off.</string>
 </resources>

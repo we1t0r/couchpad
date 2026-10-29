@@ -29,6 +29,10 @@ data class TouchpadSettings(
     val leftHanded: Boolean = false,
     val scrollStrip: Boolean = true,
     val keepScreenOn: Boolean = true,
+    /** Спрашивать перед выключением, перезагрузкой, сном и выходом из учётной записи. */
+    val confirmPower: Boolean = true,
+    /** Погашенные мониторы будит только кнопка в приложении (или клавиша на ПК), а не мышь. */
+    val monitorsWakeByAppOnly: Boolean = false,
 )
 
 class RemoteSettings(private val settings: Settings) {

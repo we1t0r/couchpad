@@ -154,4 +154,37 @@
     <string name="s_strip_title">Полоса прокрутки</string>
     <string name="s_strip_sub">Узкая полоса у края тачпада для прокрутки одним пальцем</string>
     <string name="s_strip_info">Ведите пальцем по полосе вверх и вниз — страница листается, как колесом мыши. Удобно держать телефон одной рукой. По умолчанию включено.</string>
+
+    <string name="tab_power">Питание</string>
+    <string name="pw_shutdown">Выключить</string>
+    <string name="pw_restart">Перезагрузить</string>
+    <string name="pw_sleep">Сон</string>
+    <string name="pw_hibernate">Гибернация</string>
+    <string name="pw_lock">Заблокировать</string>
+    <string name="pw_signout">Выйти из учётной записи</string>
+    <string name="pw_monitors_off">Выключить мониторы</string>
+    <string name="pw_monitors_on">Включить мониторы</string>
+    <string name="pw_monitors_hint_any">Компьютер продолжит работать: музыка, загрузки и игры не прервутся. Мониторы проснутся от движения на тачпаде, мыши или клавиши на ПК.</string>
+    <string name="pw_monitors_hint_app">Компьютер продолжит работать. Мониторы проснутся только от кнопки «Включить мониторы» или клавиши на клавиатуре ПК — случайный толчок мыши их не разбудит.</string>
+    <string name="pw_later">Позже…</string>
+    <string name="pw_computer">Компьютер</string>
+    <string name="pw_timer">Таймер</string>
+    <string name="pw_note">За минуту до выключения, перезагрузки или сна на компьютере появится окно с кнопкой «Отменить».</string>
+    <string name="pw_in">через %1$s</string>
+    <string name="pw_when">Когда</string>
+    <string name="pw_now">Сейчас</string>
+    <string name="pw_minutes">%1$s мин</string>
+    <string name="pw_force">Принудительно</string>
+    <string name="pw_force_off">Windows вежливо попросит программы закрыться. Если где-то есть несохранённое, программа спросит, сохранить ли, и компьютер подождёт ответа — то есть может так и не выключиться, пока за ним никого нет.</string>
+    <string name="pw_force_on">Программы закроются без вопросов. Несохранённые документы пропадут — включайте, только если уверены.</string>
+    <string name="pw_timer_note">Отменить таймер можно здесь, в приложении, или на компьютере — в меню значка RemoteDesk.</string>
+    <string name="pw_set_timer">Поставить таймер</string>
+
+    <string name="settings_power">Питание</string>
+    <string name="s_confirm_title">Спрашивать перед выключением</string>
+    <string name="s_confirm_sub">Выключение, перезагрузка, сон и выход — с подтверждением</string>
+    <string name="s_confirm_info">Перед выключением, перезагрузкой, сном, гибернацией и выходом из учётной записи приложение спросит, точно ли, и предложит выбрать время. Без подтверждения кнопки срабатывают сразу — удобно, но легко промахнуться. Блокировка и мониторы всегда без вопросов. По умолчанию включено.</string>
+    <string name="s_wake_title">Будить мониторы только кнопкой</string>
+    <string name="s_wake_sub">Случайное движение мыши не включит погашенные мониторы</string>
+    <string name="s_wake_info">Обычно погашенные мониторы просыпаются от любого движения мыши — в том числе если задеть её ночью или провести по тачпаду. С этой настройкой их разбудит только кнопка «Включить мониторы» в приложении. Нажатие любой клавиши на клавиатуре компьютера будит всегда — чтобы за компьютером можно было работать и без телефона. По умолчанию выключено.</string>
 </resources>

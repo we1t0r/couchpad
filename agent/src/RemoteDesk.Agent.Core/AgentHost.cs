@@ -2,12 +2,15 @@ namespace RemoteDesk.Agent.Core;
 
 /// <param name="Loopback">Слушать только 127.0.0.1 — для разработки и тестов (без окна брандмауэра).</param>
 /// <param name="Input">Куда отправлять ввод; по умолчанию — настоящие мышь и клавиатура Windows.</param>
+/// <param name="Power">Питание и мониторы; по умолчанию — Windows. Если <paramref name="Input"/> — запись
+/// (<see cref="RecordingInput"/>), то и питание пишется туда же: тесты никогда не выключат ПК.</param>
 public sealed record AgentOptions(
     string DataDir,
     int Port = Protocol.DefaultPort,
     bool Mdns = true,
     bool Loopback = false,
-    IInputSink? Input = null)
+    IInputSink? Input = null,
+    IPowerSink? Power = null)
 {
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
@@ -20,12 +23,17 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     public PairingStore Devices { get; } = new(options.DataDir);
     public PairingSecrets Secrets { get; } = new();
     public AgentServer Server { get; private set; } = null!;
+    readonly IPowerSink powerSink = options.Power
+        ?? options.Input as IPowerSink
+        ?? (OperatingSystem.IsWindows() ? new WindowsPower() : new NullPower());
+    PowerScheduler? power;
+    public PowerScheduler Power => power ??= new PowerScheduler(powerSink);
     MdnsAdvertiser? mdns;
 
     public async Task StartAsync(CancellationToken ct = default)
     {
         var input = options.Input ?? (OperatingSystem.IsWindows() ? new WindowsInput() : new NullInput());
-        Server = new AgentServer(Identity, Devices, Secrets, Info, input);
+        Server = new AgentServer(Identity, Devices, Secrets, Info, input, Power);
         await Server.StartAsync(options.Port, options.Loopback, ct);
         if (options.Mdns)
             mdns = new MdnsAdvertiser(Identity, Server.Port, NetworkInfo.Addresses());
@@ -60,5 +68,7 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
         mdns?.Dispose();
         if (Server is not null)
             await Server.DisposeAsync();
+        power?.Dispose();
+        (powerSink as IDisposable)?.Dispose();
     }
 }

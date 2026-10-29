@@ -10,6 +10,8 @@ sealed class TrayContext : ApplicationContext
     readonly SynchronizationContext ui;
     PairForm? pairForm;
     DevicesForm? devicesForm;
+    PowerWarningForm? warningForm;
+    readonly ToolStripMenuItem cancelTimerItem;
 
     public TrayContext(AgentHost host, bool showPairing)
     {
@@ -40,8 +42,46 @@ sealed class TrayContext : ApplicationContext
         host.Server.Paired += device => ui.Post(_ =>
             tray.ShowBalloonTip(4000, "Телефон подключён", $"«{device.Name}» теперь может управлять компьютером.", ToolTipIcon.Info), null);
 
+        // Таймер питания: пункт меню для отмены, уведомление при постановке, окно за минуту до срабатывания.
+        cancelTimerItem = new ToolStripMenuItem("", null, (_, _) => host.Power.Cancel()) { Visible = false };
+        menu.Items.Insert(0, cancelTimerItem);
+        host.Power.Changed += timer => ui.Post(_ => OnTimerChanged(timer), null);
+        host.Power.Warning += timer => ui.Post(_ => ShowWarning(timer), null);
+        host.Power.Failed += (action, error) => ui.Post(_ =>
+            tray.ShowBalloonTip(6000, "Не получилось", error, ToolTipIcon.Warning), null);
+
         if (showPairing)
             ShowPairing();
+    }
+
+    /// <summary>Действия, перед которыми стоит предупредить: можно потерять несохранённое.</summary>
+    static bool NeedsWarning(PowerAction a) =>
+        a is PowerAction.Shutdown or PowerAction.Restart or PowerAction.Sleep or PowerAction.Hibernate or PowerAction.SignOut;
+
+    void OnTimerChanged(PowerTimer? timer)
+    {
+        if (timer is null)
+        {
+            cancelTimerItem.Visible = false;
+            warningForm?.Close();
+            return;
+        }
+        var at = timer.At.ToLocalTime().ToString("HH:mm");
+        cancelTimerItem.Text = $"Отменить: {timer.Action.Describe().ToLowerInvariant()} в {at}";
+        cancelTimerItem.Visible = true;
+        if (NeedsWarning(timer.Action))
+            tray.ShowBalloonTip(6000, $"{timer.Action.Describe()} в {at}",
+                "Так попросили с телефона. Отменить можно в меню значка RemoteDesk или в приложении.", ToolTipIcon.Info);
+    }
+
+    void ShowWarning(PowerTimer timer)
+    {
+        if (!NeedsWarning(timer.Action))
+            return;
+        warningForm?.Close();
+        warningForm = new PowerWarningForm(timer, () => host.Power.Cancel());
+        warningForm.Show();
+        warningForm.Activate();
     }
 
     void ShowDevicesOrPairing()
@@ -74,6 +114,7 @@ sealed class TrayContext : ApplicationContext
         tray.Dispose();
         pairForm?.Close();
         devicesForm?.Close();
+        warningForm?.Close();
         base.ExitThreadCore();
     }
 }

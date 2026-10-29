@@ -94,6 +94,14 @@ fun SettingsScreen(
                 onChange { it.copy(keepScreenOn = v) }
             }
 
+            Header(Res.string.settings_power)
+            SwitchSetting(Res.string.s_confirm_title, Res.string.s_confirm_sub, Res.string.s_confirm_info, settings.confirmPower, { info = it }) { v ->
+                onChange { it.copy(confirmPower = v) }
+            }
+            SwitchSetting(Res.string.s_wake_title, Res.string.s_wake_sub, Res.string.s_wake_info, settings.monitorsWakeByAppOnly, { info = it }) { v ->
+                onChange { it.copy(monitorsWakeByAppOnly = v) }
+            }
+
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Header(Res.string.settings_advanced)
             SliderSetting(

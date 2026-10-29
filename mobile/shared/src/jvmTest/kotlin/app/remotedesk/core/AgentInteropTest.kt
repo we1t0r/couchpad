@@ -1,5 +1,7 @@
 package app.remotedesk.core
 
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
@@ -91,12 +93,21 @@ class AgentInteropTest {
                     text("Привет\b😀\n")
                     key("shift", true)
                 }
+                // Таймер питания: агент сообщает о нём, отмена убирает. Агент с --input-log ПК не выключит.
+                again.power.schedule(PowerAction.Shutdown, 600, force = true)
+                val timer = withTimeout(5_000) { again.powerTimer.filterNotNull().first() }
+                assertEquals(PowerAction.Shutdown, timer.action)
+                assertTrue(timer.force)
+                assertTrue(timer.remainingMs in 590_000..600_000, "осталось ${timer.remainingMs} мс")
+                again.power.cancel()
+                withTimeout(5_000) { again.powerTimer.first { it == null } }
+                again.power.run(PowerAction.MonitorsOff, keepMonitorsOff = true)
                 again.ping() // ping идёт после ввода: когда пришёл pong, ввод уже обработан
                 again.close()
                 val expected = listOf(
                     "move 1 -3", "wheel -60 0", "button right down", "button right up",
                     "key 0x11 down", "key 0x43 down", "key 0x43 up", "key 0x11 up",
-                    "text Привет\b😀", "key 0x10 down", "key 0x10 up",
+                    "text Привет\b😀", "key 0x10 down", "power monitors_off keep", "key 0x10 up",
                 )
                 var lines = emptyList<String>()
                 for (attempt in 1..50) {

@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import app.remotedesk.core.TouchpadSettings
 import androidx.compose.foundation.layout.Column
@@ -66,8 +69,10 @@ fun PcScreen(
     onRescan: () -> Unit,
     onForget: (pcId: String) -> Unit,
     settings: TouchpadSettings,
+    onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
+    val snackbar = remember { SnackbarHostState() }
     val title = pc?.name ?: when (state) {
         is LinkState.Connecting -> state.name
         is LinkState.Failed -> state.name
@@ -80,6 +85,7 @@ fun PcScreen(
     BackHandler(onBack)
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {
@@ -122,7 +128,7 @@ fun PcScreen(
         },
     ) { padding ->
         if (state is LinkState.Connected) {
-            RemoteControl(state, pc, settings, Modifier.fillMaxSize().padding(padding))
+            RemoteControl(state, pc, settings, onChangeSettings, snackbar, Modifier.fillMaxSize().padding(padding))
         } else {
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -156,21 +162,34 @@ fun PcScreen(
 private enum class Tab(val label: StringResource, val icon: String) {
     Touchpad(Res.string.tab_touchpad, "🖱"),
     Keyboard(Res.string.tab_keyboard, "⌨"),
+    Power(Res.string.tab_power, "⏻"),
     Info(Res.string.tab_info, "ℹ"),
 }
 
 /** Пульт: тачпад, клавиатура и сведения о ПК — вкладками внизу. */
 @Composable
-private fun RemoteControl(state: LinkState.Connected, pc: SavedPc?, settings: TouchpadSettings, modifier: Modifier) {
+private fun RemoteControl(
+    state: LinkState.Connected,
+    pc: SavedPc?,
+    settings: TouchpadSettings,
+    onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
+    snackbar: SnackbarHostState,
+    modifier: Modifier,
+) {
     var tab by rememberSaveable { mutableStateOf(Tab.Touchpad) }
     val input = state.connection.input
     KeepScreenOn(settings.keepScreenOn)
+    // Ошибки агента (например, «гибернация выключена») — внизу экрана.
+    LaunchedEffect(state.connection) {
+        state.connection.notices.collect { snackbar.showSnackbar(it) }
+    }
 
     Column(modifier) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
                 Tab.Keyboard -> KeyboardPanel(input, settings, Modifier.fillMaxSize())
+                Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())
                 Tab.Info -> Column(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),

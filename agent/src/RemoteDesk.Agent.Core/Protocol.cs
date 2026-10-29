@@ -25,6 +25,7 @@ public static class Protocol
         public const string BadMessage = "bad_message";
         public const string UnsupportedVersion = "unsupported_version";
         public const string Forbidden = "forbidden";
+        public const string PowerFailed = "power_failed";
     }
 }
 

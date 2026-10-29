@@ -118,6 +118,7 @@ fun App(
             )
             else -> PcScreen(
                 settings = touchpad,
+                onChangeSettings = remoteSettings::update,
                 onOpenSettings = { showSettings = true },
                 state = state,
                 pc = when (state) {

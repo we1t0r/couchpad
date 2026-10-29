@@ -193,6 +193,37 @@ public sealed class ServerTests : IAsyncLifetime
         Assert.Equal(["key 0x11 down", "button left down", "button left up", "key 0x11 up"], input.Lines);
     }
 
+    [Fact]
+    public async Task Power_timer_is_shared_with_all_phones_and_can_be_cancelled()
+    {
+        var token = await PairAsync();
+        using var a = await ConnectAsync();
+        await SendAsync(a, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(a);
+
+        await SendAsync(a, Message.Build("power", ("a", "shutdown"), ("in", 600), ("force", true)));
+        var timer = await ReceiveAsync(a);
+        Assert.Equal("power_timer", timer.Str("t"));
+        Assert.Equal("shutdown", timer.Str("a"));
+        Assert.Equal(true, timer.Bool("force"));
+        Assert.InRange(timer.Num("at")!.Value - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 590_000, 600_000);
+
+        // Второй вход того же телефона сразу узнаёт о таймере.
+        using var b = await ConnectAsync();
+        await SendAsync(b, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(b);
+        Assert.Equal("shutdown", (await ReceiveAsync(b)).Str("a"));
+
+        await SendAsync(b, Message.Build("power_cancel"));
+        Assert.Null((await ReceiveAsync(a)).Str("a"));
+        Assert.Null((await ReceiveAsync(b)).Str("a"));
+
+        await SendAsync(a, Message.Build("power", ("a", "lock")));
+        await SendAsync(a, Message.Build("power", ("a", "explode")));
+        Assert.Equal(Protocol.Errors.BadMessage, (await ReceiveAsync(a)).Str("code"));
+        Assert.Equal(["power lock"], input.Lines);
+    }
+
     static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 100 && !condition(); i++)

@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -88,6 +89,19 @@ class AgentConnection private constructor(
     /** Мышь и клавиатура ПК. */
     val input = RemoteInput(::enqueue)
 
+    /** Питание и мониторы ПК. */
+    val power = RemotePower(::enqueue)
+
+    private val _powerTimer = MutableStateFlow<PowerTimer?>(null)
+
+    /** Таймер питания на ПК (общий для всех телефонов). */
+    val powerTimer: StateFlow<PowerTimer?> = _powerTimer.asStateFlow()
+
+    private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
+
+    /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
+    val notices: SharedFlow<String> = _notices
+
     private fun enqueue(item: Any) {
         outbox.trySend(item)
     }
@@ -115,11 +129,14 @@ class AgentConnection private constructor(
                 val msg = (frame as? Frame.Text)?.let { parseMessage(it.readText()) } ?: continue
                 when (msg.type) {
                     "pong" -> msg.num("n")?.let { pongs.emit(it) }
+                    "power_timer" -> _powerTimer.value = RemotePower.parseTimer(msg)
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))
                         // Ошибка, после которой агент закрывает соединение, — запоминаем её как причину.
                         if (problem == Problem.Revoked || problem == Problem.Incompatible)
                             reason = AgentException(problem, msg.str("msg"))
+                        else
+                            _notices.tryEmit(msg.str("msg") ?: msg.str("code").orEmpty())
                     }
                     "bye" -> reason = AgentException(Problem.Closed, msg.str("reason"))
                 }

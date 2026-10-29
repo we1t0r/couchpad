@@ -18,11 +18,13 @@ public sealed class AgentServer(
     PairingStore devices,
     PairingSecrets secrets,
     Func<AgentInfo> info,
-    IInputSink input)
+    IInputSink input,
+    PowerScheduler power)
     : IAsyncDisposable
 {
     WebApplication? app;
     readonly ConcurrentDictionary<Session, byte> sessions = new();
+    bool subscribed;
 
     public int Port { get; private set; }
 
@@ -37,6 +39,20 @@ public sealed class AgentServer(
     internal PairingSecrets Secrets => secrets;
     internal AgentInfo Info() => info();
     internal IInputSink Input => input;
+    internal PowerScheduler Power => power;
+
+    /// <summary>Сообщение о таймере питания: {"t":"power_timer"} без полей — таймера нет.</summary>
+    internal static string TimerMessage(PowerTimer? timer) => timer is null
+        ? Message.Build("power_timer")
+        : Message.Build("power_timer", ("a", timer.Action.Name()), ("at", timer.At.ToUnixTimeMilliseconds()),
+            ("now", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()), ("force", timer.Force));
+
+    async void BroadcastTimer(PowerTimer? timer)
+    {
+        var text = TimerMessage(timer);
+        foreach (var session in sessions.Keys.Where(s => s.DeviceId is not null).ToList())
+            await session.SendAsync(text);
+    }
 
     public IReadOnlyCollection<string> ConnectedDeviceIds =>
         sessions.Keys.Where(s => s.DeviceId is not null).Select(s => s.DeviceId!).Distinct().ToList();
@@ -47,6 +63,12 @@ public sealed class AgentServer(
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(k =>
             k.Listen(loopback ? IPAddress.Loopback : IPAddress.Any, port, listen => listen.UseHttps(identity.Certificate)));
+
+        if (!subscribed)
+        {
+            power.Changed += BroadcastTimer;
+            subscribed = true;
+        }
 
         app = builder.Build();
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
@@ -95,6 +117,7 @@ public sealed class AgentServer(
 
     public async ValueTask DisposeAsync()
     {
+        power.Changed -= BroadcastTimer;
         foreach (var session in sessions.Keys.ToList())
             await session.SendAsync(Message.Build("bye", ("reason", "agent_stopped")));
         if (app is not null)
@@ -168,6 +191,15 @@ internal sealed class Session(AgentServer server, WebSocket ws)
             case "bye":
                 await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
                 break;
+            case "power":
+            case "power_cancel":
+                if (!permissions.Contains("power"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Управление питанием выключено на компьютере"));
+                    break;
+                }
+                await PowerAsync(msg);
+                break;
             case var _ when InputHandler.Handles(type):
                 if (!permissions.Contains("input"))
                 {
@@ -226,7 +258,49 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         DeviceId = device.DeviceId;
         permissions = Protocol.DefaultPermissions;
         await SendAsync(Message.Build("welcome", ("agent", server.Info()), ("permissions", Protocol.DefaultPermissions)));
+        if (server.Power.Current is { } timer)
+            await SendAsync(AgentServer.TimerMessage(timer));
         server.OnAuthenticated(this, device, justPaired: false);
+    }
+
+    async Task PowerAsync(System.Text.Json.Nodes.JsonObject msg)
+    {
+        if (msg.Str("t") == "power_cancel")
+        {
+            // Если таймера уже нет, всё равно сообщаем текущее состояние: телефон мог его пропустить.
+            if (!server.Power.Cancel())
+                await SendAsync(AgentServer.TimerMessage(null));
+            return;
+        }
+
+        if (PowerActions.Parse(msg.Str("a")) is not { } action)
+        {
+            await SendAsync(Message.Error(Protocol.Errors.BadMessage, $"Неизвестное действие «{msg.Str("a")}»"));
+            return;
+        }
+        var force = msg.Bool("force") ?? false;
+        var keep = msg.Bool("keep") ?? false;
+        var delay = msg.Num("in") ?? 0;
+        try
+        {
+            if (delay > 0)
+            {
+                if (TimeSpan.FromSeconds(delay) > PowerScheduler.MaxDelay)
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.BadMessage, "Таймер — не больше суток"));
+                    return;
+                }
+                server.Power.Schedule(action, TimeSpan.FromSeconds(delay), force, keep);
+            }
+            else
+            {
+                server.Power.Run(action, force, keep);
+            }
+        }
+        catch (Exception e)
+        {
+            await SendAsync(Message.Error(Protocol.Errors.PowerFailed, e.Message));
+        }
     }
 
     static string? Limit(string? s, int max) =>

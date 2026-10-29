@@ -32,6 +32,13 @@ class PcStore(private val settings: Settings) {
 
     fun get(id: String): SavedPc? = _pcs.value.firstOrNull { it.id == id }
 
+    /** Компьютер для виджета и плиток: последний, к которому подключались, иначе первый рабочий. */
+    fun lastUsed(): SavedPc? =
+        settings.getStringOrNull(KEY_LAST)?.let(::get)?.takeIf { !it.revoked }
+            ?: _pcs.value.firstOrNull { !it.revoked }
+
+    fun markUsed(id: String) = settings.putString(KEY_LAST, id)
+
     /** Постоянный идентификатор этого телефона (не секрет, просто имя для агента). */
     fun device(name: String, platform: String): DeviceInfo {
         val id = settings.getStringOrNull(KEY_DEVICE_ID) ?: Random.nextBytes(16)
@@ -84,6 +91,7 @@ class PcStore(private val settings: Settings) {
     private companion object {
         const val KEY_PCS = "pcs"
         const val KEY_DEVICE_ID = "deviceId"
+        const val KEY_LAST = "lastPc"
         const val MAX_HOSTS = 6
     }
 }

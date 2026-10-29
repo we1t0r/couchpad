@@ -1,3 +1,24 @@
 <resources>
     <string name="scan_prompt">Наведите камеру на QR-код на экране компьютера</string>
+
+    <string name="tile_monitors_off">Мониторы выкл</string>
+    <string name="tile_monitors_on">Мониторы вкл</string>
+    <string name="tile_lock">Заблокировать ПК</string>
+
+    <string name="widget_description">Выключить и включить мониторы, заблокировать компьютер — не открывая приложение</string>
+    <string name="widget_monitors_off">Мониторы выкл</string>
+    <string name="widget_monitors_on">Вкл</string>
+    <string name="widget_lock">Блок</string>
+
+    <string name="qa_no_pc">Компьютер ещё не подключён. Откройте RemoteDesk и отсканируйте QR-код.</string>
+    <string name="qa_no_pc_short">Откройте RemoteDesk, чтобы подключить компьютер</string>
+    <string name="qa_done_monitors_off">«%1$s»: мониторы выключены</string>
+    <string name="qa_done_monitors_on">«%1$s»: мониторы включены</string>
+    <string name="qa_done_lock">«%1$s» заблокирован</string>
+    <string name="qa_failed">«%1$s»: %2$s</string>
+    <string name="qa_problem_unreachable">компьютер не отвечает. Он включён и в том же Wi-Fi?</string>
+    <string name="qa_problem_wrong_pc">ответил другой компьютер. Подключите его заново в приложении.</string>
+    <string name="qa_problem_revoked">доступ отозван. Подключите компьютер заново в приложении.</string>
+    <string name="qa_problem_timeout">связь слишком медленная, попробуйте ещё раз</string>
+    <string name="qa_problem_other">что-то пошло не так. Подробности — в приложении.</string>
 </resources>

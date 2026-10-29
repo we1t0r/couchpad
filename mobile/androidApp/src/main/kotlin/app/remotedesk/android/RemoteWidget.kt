@@ -1,0 +1,80 @@
+package app.remotedesk.android
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.widget.RemoteViews
+import app.remotedesk.core.PcStore
+import app.remotedesk.core.PowerAction
+import kotlinx.coroutines.launch
+
+/** Виджет на рабочий стол: «Выключить мониторы», «Включить мониторы», «Заблокировать». */
+class RemoteWidget : AppWidgetProvider() {
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        val views = views(context)
+        ids.forEach { manager.updateAppWidget(it, views) }
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.getStringExtra(EXTRA_ACTION)?.let { name -> PowerAction.entries.firstOrNull { it.name == name } }
+        if (intent.action != ACTION_RUN || action == null) {
+            super.onReceive(context, intent)
+            return
+        }
+        // goAsync даёт широковещательному приёмнику до ~10 с на работу в фоне.
+        val pending = goAsync()
+        appScope.launch {
+            try {
+                QuickActions.runAndToast(context.applicationContext, action)
+            } finally {
+                refresh(context)
+                pending.finish()
+            }
+        }
+    }
+
+    companion object {
+        private const val ACTION_RUN = "app.remotedesk.widget.RUN"
+        private const val EXTRA_ACTION = "action"
+
+        /** Обновить подпись (имя компьютера) на всех виджетах. */
+        fun refresh(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, RemoteWidget::class.java))
+            if (ids.isNotEmpty()) manager.updateAppWidget(ids, views(context))
+        }
+
+        private fun views(context: Context): RemoteViews {
+            val pc = PcStore(context.settingsStorage()).lastUsed()
+            return RemoteViews(context.packageName, R.layout.widget_remote).apply {
+                setTextViewText(R.id.widget_title, pc?.name ?: context.getString(R.string.qa_no_pc_short))
+                setOnClickPendingIntent(R.id.widget_title, openApp(context))
+                setOnClickPendingIntent(R.id.widget_monitors_off, run(context, PowerAction.MonitorsOff))
+                setOnClickPendingIntent(R.id.widget_monitors_on, run(context, PowerAction.MonitorsOn))
+                setOnClickPendingIntent(R.id.widget_lock, run(context, PowerAction.Lock))
+            }
+        }
+
+        private fun run(context: Context, action: PowerAction): PendingIntent {
+            val intent = Intent(context, RemoteWidget::class.java)
+                .setAction(ACTION_RUN)
+                .putExtra(EXTRA_ACTION, action.name)
+            return PendingIntent.getBroadcast(
+                context,
+                action.ordinal,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
+            context,
+            100,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+}

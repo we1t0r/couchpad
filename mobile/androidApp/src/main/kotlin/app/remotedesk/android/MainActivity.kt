@@ -1,9 +1,7 @@
 package app.remotedesk.android
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,7 +11,6 @@ import app.remotedesk.core.RemoteSettings
 import app.remotedesk.ui.App
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import com.russhwolf.settings.SharedPreferencesSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) incomingLinks.value = intent?.dataString
 
-        val prefs = SharedPreferencesSettings(getSharedPreferences("remotedesk", MODE_PRIVATE))
+        val prefs = settingsStorage()
         val store = PcStore(prefs)
         val remoteSettings = RemoteSettings(prefs)
         val device = store.device(deviceName(), "android")
@@ -69,14 +66,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         discovery.stop()
+        // Пока были в приложении, могли подключиться к другому компьютеру — виджет покажет его.
+        RemoteWidget.refresh(applicationContext)
         super.onStop()
-    }
-
-    /** Имя, которое пользователь дал телефону, иначе «Производитель Модель». */
-    private fun deviceName(): String {
-        val userName = runCatching { Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME) }.getOrNull()
-        if (!userName.isNullOrBlank()) return userName
-        val maker = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
-        return if (Build.MODEL.startsWith(maker, ignoreCase = true)) Build.MODEL else "$maker ${Build.MODEL}"
     }
 }

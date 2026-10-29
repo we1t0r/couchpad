@@ -58,7 +58,13 @@ class PairingLinkTest {
         assertEquals(47801, reloaded.get("pc1")!!.port)
         assertEquals(deviceId, reloaded.device("Pixel", "android").id)
 
+        reloaded.save(SavedPc("pc2", "Ноутбук", listOf("192.168.0.3"), 47800, "fp2", "t2"))
+        reloaded.markUsed("pc1")
+        assertEquals("pc1", PcStore(settings).lastUsed()!!.id)
+
         reloaded.markRevoked("pc1")
         assertTrue(PcStore(settings).get("pc1")!!.revoked)
+        // Отозванный не годится для виджета — берём другой.
+        assertEquals("pc2", PcStore(settings).lastUsed()!!.id)
     }
 }

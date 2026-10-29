@@ -72,6 +72,7 @@ class ConnectionController(
                 return@launch
             }
             try {
+                store.markUsed(pcId)
                 _state.value = LinkState.Connected(pcId, connection)
                 val watcher = launch {
                     val reason = connection.closed.filterNotNull().first()

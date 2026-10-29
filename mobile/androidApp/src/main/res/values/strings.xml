@@ -1,4 +1,26 @@
 <resources>
-    <string name="app_name">RemoteDesk</string>
+    <string name="app_name" translatable="false">RemoteDesk</string>
     <string name="scan_prompt">Point the camera at the QR code on the computer screen</string>
+
+    <string name="tile_monitors_off">Monitors off</string>
+    <string name="tile_monitors_on">Monitors on</string>
+    <string name="tile_lock">Lock PC</string>
+
+    <string name="widget_label" translatable="false">RemoteDesk</string>
+    <string name="widget_description">Turn the computer’s monitors off and on, lock it — without opening the app</string>
+    <string name="widget_monitors_off">Monitors off</string>
+    <string name="widget_monitors_on">On</string>
+    <string name="widget_lock">Lock</string>
+
+    <string name="qa_no_pc">No computer connected yet. Open RemoteDesk and scan the QR code.</string>
+    <string name="qa_no_pc_short">Open RemoteDesk to connect a computer</string>
+    <string name="qa_done_monitors_off">“%1$s”: monitors off</string>
+    <string name="qa_done_monitors_on">“%1$s”: monitors on</string>
+    <string name="qa_done_lock">“%1$s” is locked</string>
+    <string name="qa_failed">“%1$s”: %2$s</string>
+    <string name="qa_problem_unreachable">the computer is not responding. Is it on and on the same Wi-Fi?</string>
+    <string name="qa_problem_wrong_pc">a different computer answered. Connect it again in the app.</string>
+    <string name="qa_problem_revoked">access was revoked. Connect it again in the app.</string>
+    <string name="qa_problem_timeout">the connection is too slow, try again</string>
+    <string name="qa_problem_other">something went wrong. Open the app for details.</string>
 </resources>

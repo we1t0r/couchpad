@@ -80,7 +80,11 @@ public sealed class WindowsPower : IPowerSink, IDisposable
 ///
 /// Windows сообщает окну, что дисплей включился. Если с момента выключения не было ни мыши, ни
 /// клавиатуры (GetLastInputInfo — просто время последнего ввода, без перехвата), дисплей разбудила
-/// программа: игры и видеоплееры держат запрос «экран нужен». Тогда мониторы гасятся снова.
+/// программа (например, запущенная игра). Windows такой программе не перечить, поэтому мониторы
+/// усыпляются командой самому монитору по DDC/CI: для Windows и игры экран остаётся включённым,
+/// будить нечего. Просыпаются они по кнопке из приложения или (обычный режим) от мыши, клавиатуры,
+/// тачпада телефона — это видно по GetLastInputInfo, который окно опрашивает раз в 250 мс.
+/// Если монитор DDC/CI не понимает, дисплей гасится снова обычной командой.
 ///
 /// Режим «будить только кнопкой из приложения»: дисплей гасится снова и после мыши или телефона.
 /// Снимает режим только клавиша на клавиатуре ПК — это человек за компьютером. О клавишах окно
@@ -95,7 +99,7 @@ sealed class Display : IDisposable
     const uint WmDestroy = 0x0002, WmClose = 0x0010, WmTimer = 0x0113, WmSysCommand = 0x0112, WmInput = 0x00FF;
     const uint WmPowerBroadcast = 0x0218, PbtPowerSettingChange = 0x8013, WmApp = 0x8000;
     const int ScMonitorPower = 0xF170;
-    const int ReoffTimer = 1;
+    const int ReoffTimer = 1, InputTimer = 2;
     static readonly Guid ConsoleDisplayState = new("6fe69556-704a-47a0-8f24-c28d936fda47");
 
     static readonly TimeSpan KeyboardWakes = TimeSpan.FromSeconds(3);
@@ -108,7 +112,7 @@ sealed class Display : IDisposable
     nint hwnd;
 
     // Состояние ниже меняется только в потоке окна.
-    bool wantOff, keepOff;
+    bool wantOff, keepOff, ddcOff;
     uint inputAtOff;
     long lastKey;
     readonly Queue<long> reoffs = new();
@@ -182,18 +186,26 @@ sealed class Display : IDisposable
                 wantOff = true;
                 inputAtOff = LastInput();
                 reoffs.Clear();
-                TurnOff();
+                if (ddcOff)
+                    WatchInput(); // уже спят по DDC — меняется только, что их будит
+                else
+                    TurnOff();
                 return 0;
             case WmApp:
-                wantOff = false;
-                SetKeepOff(false);
+                Release();
                 KillTimer(hwnd, ReoffTimer);
                 TurnOn();
                 return 0;
             case WmInput:
                 // Пришло событие клавиатуры (только её мы и слушаем) — за компьютером человек.
                 lastKey = Environment.TickCount64;
+                if (ddcOff && keepOff)
+                    Release();
                 break;
+            case WmTimer when wParam == InputTimer:
+                if (ddcOff && !keepOff && (int)(LastInput() - inputAtOff) > 0)
+                    Release();
+                return 0;
             case WmPowerBroadcast when wParam == PbtPowerSettingChange:
                 OnDisplayState(lParam);
                 return 1;
@@ -203,8 +215,7 @@ sealed class Display : IDisposable
                     TurnOff();
                 return 0;
             case WmDestroy:
-                wantOff = false;
-                SetKeepOff(false);
+                Release(); // мониторы, уснувшие по DDC, без агента сами не проснутся
                 PostQuitMessage(0);
                 return 0;
         }
@@ -213,7 +224,7 @@ sealed class Display : IDisposable
 
     void OnDisplayState(nint setting)
     {
-        if (!wantOff || Marshal.PtrToStructure<Guid>(setting) != ConsoleDisplayState)
+        if (!wantOff || ddcOff || Marshal.PtrToStructure<Guid>(setting) != ConsoleDisplayState)
             return;
         var state = Marshal.ReadInt32(setting, 20); // 0 — выключен, 1 — включён, 2 — притушен
         if (state != 1)
@@ -226,6 +237,13 @@ sealed class Display : IDisposable
         if (human)
         {
             Release();
+            return;
+        }
+        // Разбудила программа — усыпляем сами мониторы, тогда ей будить нечего.
+        if (Ddc.SetPower(Ddc.Standby))
+        {
+            ddcOff = true;
+            WatchInput();
             return;
         }
         while (reoffs.Count > 0 && now - reoffs.Peek() > ReoffWindow.TotalMilliseconds)
@@ -246,6 +264,21 @@ sealed class Display : IDisposable
     {
         wantOff = false;
         SetKeepOff(false);
+        KillTimer(hwnd, InputTimer);
+        if (ddcOff)
+        {
+            ddcOff = false;
+            Ddc.SetPower(Ddc.On);
+        }
+    }
+
+    /// <summary>Пока мониторы спят по DDC: в обычном режиме их будит любой ввод — следим за временем ввода.</summary>
+    void WatchInput()
+    {
+        if (keepOff)
+            KillTimer(hwnd, InputTimer);
+        else
+            SetTimer(hwnd, InputTimer, 250, 0);
     }
 
     /// <summary>Время последнего ввода мышью или клавиатурой (в мс от запуска системы).</summary>
@@ -426,4 +459,59 @@ sealed class Display : IDisposable
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     static extern nint GetModuleHandleW(string? name);
+}
+
+/// <summary>
+/// Питание самих мониторов по DDC/CI (код VCP 0xD6). Монитор засыпает по команде, хотя Windows
+/// считает экран включённым. Не все мониторы это умеют, у некоторых DDC/CI выключен в меню монитора.
+/// </summary>
+[SupportedOSPlatform("windows")]
+static class Ddc
+{
+    public const uint On = 1, Standby = 4;
+    const byte PowerMode = 0xD6;
+
+    /// <summary>true — команду принял хотя бы один монитор.</summary>
+    public static bool SetPower(uint mode)
+    {
+        var any = false;
+        EnumDisplayMonitors(0, 0, (monitor, _, _, _) =>
+        {
+            if (!GetNumberOfPhysicalMonitorsFromHMONITOR(monitor, out var count) || count == 0)
+                return true;
+            var physical = new PhysicalMonitor[count];
+            if (!GetPhysicalMonitorsFromHMONITOR(monitor, count, physical))
+                return true;
+            foreach (var m in physical)
+                any |= SetVCPFeature(m.handle, PowerMode, mode);
+            DestroyPhysicalMonitors(count, physical);
+            return true;
+        }, 0);
+        return any;
+    }
+
+    delegate bool MonitorEnumProc(nint monitor, nint hdc, nint rect, nint data);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct PhysicalMonitor
+    {
+        public nint handle;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string description;
+    }
+
+    [DllImport("user32.dll")]
+    static extern bool EnumDisplayMonitors(nint hdc, nint clip, MonitorEnumProc proc, nint data);
+
+    [DllImport("dxva2.dll")]
+    static extern bool GetNumberOfPhysicalMonitorsFromHMONITOR(nint monitor, out uint count);
+
+    [DllImport("dxva2.dll")]
+    static extern bool GetPhysicalMonitorsFromHMONITOR(nint monitor, uint count, [Out] PhysicalMonitor[] monitors);
+
+    [DllImport("dxva2.dll")]
+    static extern bool SetVCPFeature(nint monitor, byte code, uint value);
+
+    [DllImport("dxva2.dll")]
+    static extern bool DestroyPhysicalMonitors(uint count, PhysicalMonitor[] monitors);
 }

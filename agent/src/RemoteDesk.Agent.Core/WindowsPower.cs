@@ -71,12 +71,16 @@ public sealed class WindowsPower : IPowerSink, IDisposable
 /// игры и программы и долго «разгребалась» после включения. Перехватчиков мыши и клавиатуры нет —
 /// они пропускали через агента каждое событие мыши и вызывали лаги в играх.
 ///
-/// Режим «будить только кнопкой из приложения»: Windows сообщает окну, что дисплей включился.
-/// Если перед этим нажимали клавишу на клавиатуре ПК — это человек за компьютером, режим снимается.
-/// Иначе (мышь, телефон) — мониторы гасятся снова. О клавишах окно узнаёт через Raw Input только
-/// клавиатуры, и только пока режим включён; мышь не затрагивается вовсе.
-/// Если дисплей просыпается снова и снова (например, мышь сама «дрожит»), режим тоже снимается,
-/// чтобы не мигать экраном.
+/// Windows сообщает окну, что дисплей включился. Если с момента выключения не было ни мыши, ни
+/// клавиатуры (GetLastInputInfo — просто время последнего ввода, без перехвата), дисплей разбудила
+/// программа: игры и видеоплееры держат запрос «экран нужен». Тогда мониторы гасятся снова.
+///
+/// Режим «будить только кнопкой из приложения»: дисплей гасится снова и после мыши или телефона.
+/// Снимает режим только клавиша на клавиатуре ПК — это человек за компьютером. О клавишах окно
+/// узнаёт через Raw Input только клавиатуры, и только пока режим включён; мышь не затрагивается.
+///
+/// Если дисплей просыпается снова и снова (мышь сама «дрожит», программа не отпускает экран),
+/// попытки прекращаются, чтобы не мигать экраном.
 /// </summary>
 [SupportedOSPlatform("windows")]
 sealed class Display : IDisposable
@@ -87,7 +91,6 @@ sealed class Display : IDisposable
     const int ReoffTimer = 1;
     static readonly Guid ConsoleDisplayState = new("6fe69556-704a-47a0-8f24-c28d936fda47");
 
-    static readonly TimeSpan IgnoreAfterOff = TimeSpan.FromSeconds(2);
     static readonly TimeSpan KeyboardWakes = TimeSpan.FromSeconds(3);
     const int MaxReoffs = 3;
     static readonly TimeSpan ReoffWindow = TimeSpan.FromSeconds(30);
@@ -98,8 +101,9 @@ sealed class Display : IDisposable
     nint hwnd;
 
     // Состояние ниже меняется только в потоке окна.
-    bool keepOff;
-    long offAt, lastKey;
+    bool wantOff, keepOff;
+    uint inputAtOff;
+    long lastKey;
     readonly Queue<long> reoffs = new();
 
     public Display() => proc = WindowProc;
@@ -165,11 +169,13 @@ sealed class Display : IDisposable
         {
             case WmApp when wParam == 1:
                 SetKeepOff(lParam == 1);
-                offAt = Environment.TickCount64;
+                wantOff = true;
+                inputAtOff = LastInput();
                 reoffs.Clear();
                 TurnOff();
                 return 0;
             case WmApp:
+                wantOff = false;
                 SetKeepOff(false);
                 KillTimer(hwnd, ReoffTimer);
                 TurnOn();
@@ -183,10 +189,11 @@ sealed class Display : IDisposable
                 return 1;
             case WmTimer when wParam == ReoffTimer:
                 KillTimer(hwnd, ReoffTimer);
-                if (keepOff)
+                if (wantOff)
                     TurnOff();
                 return 0;
             case WmDestroy:
+                wantOff = false;
                 SetKeepOff(false);
                 PostQuitMessage(0);
                 return 0;
@@ -196,16 +203,19 @@ sealed class Display : IDisposable
 
     void OnDisplayState(nint setting)
     {
-        if (!keepOff || Marshal.PtrToStructure<Guid>(setting) != ConsoleDisplayState)
+        if (!wantOff || Marshal.PtrToStructure<Guid>(setting) != ConsoleDisplayState)
             return;
         var state = Marshal.ReadInt32(setting, 20); // 0 — выключен, 1 — включён, 2 — притушен
-        var now = Environment.TickCount64;
-        if (state != 1 || now - offAt < IgnoreAfterOff.TotalMilliseconds)
+        if (state != 1)
             return;
+        var now = Environment.TickCount64;
 
-        if (now - lastKey < KeyboardWakes.TotalMilliseconds)
+        var human = keepOff
+            ? now - lastKey < KeyboardWakes.TotalMilliseconds
+            : (int)(LastInput() - inputAtOff) > 0; // был ввод после выключения: мышь, клавиатура, телефон
+        if (human)
         {
-            SetKeepOff(false);
+            Release();
             return;
         }
         while (reoffs.Count > 0 && now - reoffs.Peek() > ReoffWindow.TotalMilliseconds)
@@ -213,12 +223,25 @@ sealed class Display : IDisposable
         if (reoffs.Count >= MaxReoffs)
         {
             // Что-то будит дисплей снова и снова — не мигаем экраном, оставляем включённым.
-            SetKeepOff(false);
+            Release();
             return;
         }
         reoffs.Enqueue(now);
         // Небольшая пауза: Windows только что включила дисплей и сразу же выключить его не даст.
         SetTimer(hwnd, ReoffTimer, 500, 0);
+    }
+
+    void Release()
+    {
+        wantOff = false;
+        SetKeepOff(false);
+    }
+
+    /// <summary>Время последнего ввода мышью или клавиатурой (в мс от запуска системы).</summary>
+    static uint LastInput()
+    {
+        var info = new LastInputInfo { cbSize = (uint)Marshal.SizeOf<LastInputInfo>() };
+        return GetLastInputInfo(ref info) ? info.dwTime : 0;
     }
 
     void TurnOff() => DefWindowProcW(hwnd, WmSysCommand, ScMonitorPower, 2);
@@ -350,8 +373,17 @@ sealed class Display : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     static extern bool RegisterRawInputDevices(RawInputDevice[] devices, uint count, uint size);
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct LastInputInfo
+    {
+        public uint cbSize, dwTime;
+    }
+
     [DllImport("user32.dll")]
     static extern uint SendInput(uint count, MouseInput[] inputs, int size);
+
+    [DllImport("user32.dll")]
+    static extern bool GetLastInputInfo(ref LastInputInfo info);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     static extern nint GetModuleHandleW(string? name);

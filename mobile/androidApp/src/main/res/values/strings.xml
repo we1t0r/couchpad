@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RemoteDesk</string>
+    <string name="scan_prompt">Point the camera at the QR code on the computer screen</string>
+</resources>

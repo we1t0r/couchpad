@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Стрелка курсора, как у значка агента в трее. Видимая зона адаптивного значка — центральные 66 из 108. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,30 L42,74 L52.5,64 L59.5,79.5 L66.5,76.5 L59.5,61 L74,61 Z" />
+</vector>

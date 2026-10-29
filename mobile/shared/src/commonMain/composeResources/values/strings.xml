@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_title">RemoteDesk</string>
+
+    <string name="home_scan">Scan QR code</string>
+    <string name="home_paste">Enter link manually</string>
+    <string name="home_empty_title">Let’s connect your computer</string>
+    <string name="home_empty_step1">1. Install RemoteDesk on your Windows computer and run it.</string>
+    <string name="home_empty_step2">2. A window with a QR code will open on the computer. If it didn’t, click the RemoteDesk icon next to the clock → “Connect phone…”.</string>
+    <string name="home_empty_step3">3. Tap “Scan QR code” and point the camera at the screen. The phone and the computer must be on the same network (the same Wi-Fi).</string>
+    <string name="home_saved">Your computers</string>
+    <string name="home_found">Found on the network</string>
+    <string name="home_found_hint">Not connected yet. Tap to see how.</string>
+    <string name="pc_online">on the network</string>
+    <string name="pc_revoked">access revoked — connect again</string>
+
+    <string name="found_title">Connect “%1$s”</string>
+    <string name="found_text">For safety, a computer is connected only with a QR code from its screen. On the computer, click the RemoteDesk icon next to the clock → “Connect phone…” and scan the code.</string>
+
+    <string name="action_scan">Scan</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_rescan">Scan QR code again</string>
+    <string name="action_back">Back</string>
+    <string name="action_more">More</string>
+    <string name="action_forget">Forget this computer</string>
+    <string name="action_forget_confirm">Forget</string>
+
+    <string name="paste_title">Pairing link</string>
+    <string name="paste_text">For advanced users: the QR code on the computer contains a link that starts with rdesk://pair. You can paste it here instead of scanning.</string>
+    <string name="bad_link">This is not a RemoteDesk code. Scan the QR code from the “Connect phone” window on the computer.</string>
+
+    <string name="confirm_title">Connect a computer?</string>
+    <string name="confirm_text">Pair this phone with “%1$s” (%2$s)? Connect only computers you trust.</string>
+
+    <string name="forget_title">Forget “%1$s”?</string>
+    <string name="forget_text">The phone will delete its access key for this computer. To connect again, you will need to scan the QR code. You can also remove the phone on the computer: RemoteDesk icon → “Phones…”.</string>
+
+    <string name="connecting">Connecting to “%1$s”…</string>
+    <string name="pairing">Pairing with “%1$s”…</string>
+    <string name="connected">Connected</string>
+    <string name="ping">Response time: %1$s ms</string>
+    <string name="ping_waiting">Measuring response time…</string>
+    <string name="via">Address: %1$s</string>
+    <string name="info_title">About the computer</string>
+    <string name="info_os">System</string>
+    <string name="info_agent">RemoteDesk on the computer</string>
+    <string name="info_mac">Adapters for turning on over the network (Wake-on-LAN)</string>
+    <string name="info_wired">wired</string>
+    <string name="info_wireless">wireless</string>
+    <string name="coming_soon">The touchpad, keyboard, power buttons, files and screen are coming in the next versions. For now the app checks the connection.</string>
+    <string name="details">Technical details</string>
+
+    <string name="problem_unreachable_title">The computer is not responding</string>
+    <string name="problem_unreachable_text">Check that the computer is on, RemoteDesk is running on it, and the phone is on the same Wi-Fi network. If Windows asked about the firewall, allow access for RemoteDesk.</string>
+    <string name="problem_wrong_pc_title">This is a different computer</string>
+    <string name="problem_wrong_pc_text">A computer with a different security key answered at this address. If RemoteDesk was reinstalled, connect the computer again with the QR code.</string>
+    <string name="problem_bad_code_title">The code didn’t work</string>
+    <string name="problem_bad_code_text">Each QR code works once. On the computer, click “Refresh code” and scan the new one.</string>
+    <string name="problem_code_expired_title">The QR code has expired</string>
+    <string name="problem_code_expired_text">The code is valid for 10 minutes. On the computer, click “Refresh code” and scan it again.</string>
+    <string name="problem_too_many_title">Too many attempts</string>
+    <string name="problem_too_many_text">The computer has paused pairing for safety. Open “Connect phone” on the computer again.</string>
+    <string name="problem_revoked_title">Access revoked</string>
+    <string name="problem_revoked_text">This phone was removed from the list on the computer. Connect it again with the QR code.</string>
+    <string name="problem_timeout_title">The connection is too slow</string>
+    <string name="problem_timeout_text">The computer stopped responding in time. Check the Wi-Fi signal and try again.</string>
+    <string name="problem_incompatible_title">An update is needed</string>
+    <string name="problem_incompatible_text">The app and RemoteDesk on the computer are different versions. Update both to the latest version.</string>
+    <string name="problem_protocol_title">Unexpected answer</string>
+    <string name="problem_protocol_text">The computer answered something the app doesn’t understand. Try updating RemoteDesk.</string>
+    <string name="problem_closed_title">The connection was closed</string>
+    <string name="problem_closed_text">The computer closed the connection: RemoteDesk was turned off, or the computer went to sleep.</string>
+</resources>

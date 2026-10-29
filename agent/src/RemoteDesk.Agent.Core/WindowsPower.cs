@@ -11,6 +11,13 @@ public sealed class WindowsPower : IPowerSink, IDisposable
 {
     readonly Display display = new();
 
+    /// <summary>Мониторы не удалось удержать выключенными: их снова и снова будит программа.</summary>
+    public event Action<string>? MonitorsProblem
+    {
+        add => display.GaveUp += value;
+        remove => display.GaveUp -= value;
+    }
+
     public void Execute(PowerAction action, bool force, bool keepMonitorsOff)
     {
         switch (action)
@@ -107,6 +114,9 @@ sealed class Display : IDisposable
     readonly Queue<long> reoffs = new();
 
     public Display() => proc = WindowProc;
+
+    /// <summary>Программа не даёт погасить мониторы; текст — для человека. Вызывается из потока окна.</summary>
+    public event Action<string>? GaveUp;
 
     public void Off(bool keep) => Post(1, keep ? 1 : 0);
 
@@ -224,6 +234,7 @@ sealed class Display : IDisposable
         {
             // Что-то будит дисплей снова и снова — не мигаем экраном, оставляем включённым.
             Release();
+            GaveUp?.Invoke(WhoWakes());
             return;
         }
         reoffs.Enqueue(now);
@@ -245,6 +256,28 @@ sealed class Display : IDisposable
     }
 
     void TurnOff() => DefWindowProcW(hwnd, WmSysCommand, ScMonitorPower, 2);
+
+    /// <summary>Объяснение для человека: какая программа, скорее всего, будит мониторы.</summary>
+    static string WhoWakes()
+    {
+        string? name = null;
+        try
+        {
+            GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+            if (pid != 0 && pid != Environment.ProcessId)
+            {
+                using var p = Process.GetProcessById((int)pid);
+                if (!p.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase))
+                    name = p.ProcessName + ".exe";
+            }
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or Win32Exception)
+        {
+        }
+        return name is null
+            ? "Мониторы снова и снова включает какая-то программа на компьютере — обычно игра или видео. Закройте её и выключите мониторы ещё раз."
+            : $"Мониторы снова и снова включает {name}. Пока программа запущена, погасить их не получится — закройте её и выключите мониторы ещё раз.";
+    }
 
     void TurnOn()
     {
@@ -384,6 +417,12 @@ sealed class Display : IDisposable
 
     [DllImport("user32.dll")]
     static extern bool GetLastInputInfo(ref LastInputInfo info);
+
+    [DllImport("user32.dll")]
+    static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    static extern uint GetWindowThreadProcessId(nint hwnd, out uint pid);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     static extern nint GetModuleHandleW(string? name);

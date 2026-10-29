@@ -85,6 +85,14 @@ public sealed class AgentServer(
             await session.SendAsync(text);
     }
 
+    /// <summary>Сообщение об ошибке всем подключённым телефонам (телефон покажет его внизу экрана).</summary>
+    public async Task NotifyAsync(string code, string msg)
+    {
+        var text = Message.Error(code, msg);
+        foreach (var session in sessions.Keys.Where(s => s.DeviceId is not null).ToList())
+            await session.SendAsync(text);
+    }
+
     public IReadOnlyCollection<string> ConnectedDeviceIds =>
         sessions.Keys.Where(s => s.DeviceId is not null).Select(s => s.DeviceId!).Distinct().ToList();
 

@@ -53,6 +53,12 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
             };
         var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle);
         Server = new AgentServer(Identity, Devices, Secrets, Info, services);
+        if (OperatingSystem.IsWindows() && powerSink is WindowsPower windows)
+            windows.MonitorsProblem += msg =>
+            {
+                Power.Report(PowerAction.MonitorsOff, msg);
+                _ = Server.NotifyAsync(Protocol.Errors.PowerFailed, msg);
+            };
         await Server.StartAsync(options.Port, options.Loopback, ct);
         if (options.Mdns)
             mdns = new MdnsAdvertiser(Identity, Server.Port, NetworkInfo.Addresses());

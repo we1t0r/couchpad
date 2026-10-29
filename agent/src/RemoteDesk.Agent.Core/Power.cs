@@ -146,6 +146,9 @@ public sealed class PowerScheduler(IPowerSink sink, TimeProvider? time = null) :
         }
     }
 
+    /// <summary>Сообщить о сбое, случившемся уже после выполнения (например, мониторы снова включились).</summary>
+    public void Report(PowerAction action, string error) => Failed?.Invoke(action, error);
+
     void Execute(PowerAction action, bool force, bool keepMonitorsOff)
     {
         try

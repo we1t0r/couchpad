@@ -13,7 +13,12 @@ using Microsoft.Extensions.Logging;
 namespace RemoteDesk.Agent.Core;
 
 /// <summary>WebSocket-сервер агента поверх TLS: wss://ip:port/ws.</summary>
-public sealed class AgentServer(AgentIdentity identity, PairingStore devices, PairingSecrets secrets, Func<AgentInfo> info)
+public sealed class AgentServer(
+    AgentIdentity identity,
+    PairingStore devices,
+    PairingSecrets secrets,
+    Func<AgentInfo> info,
+    IInputSink input)
     : IAsyncDisposable
 {
     WebApplication? app;
@@ -31,6 +36,7 @@ public sealed class AgentServer(AgentIdentity identity, PairingStore devices, Pa
     internal PairingStore Devices => devices;
     internal PairingSecrets Secrets => secrets;
     internal AgentInfo Info() => info();
+    internal IInputSink Input => input;
 
     public IReadOnlyCollection<string> ConnectedDeviceIds =>
         sessions.Keys.Where(s => s.DeviceId is not null).Select(s => s.DeviceId!).Distinct().ToList();
@@ -104,6 +110,8 @@ internal sealed class Session(AgentServer server, WebSocket ws)
 {
     const int MaxMessageBytes = 1 << 20;
     readonly SemaphoreSlim sendLock = new(1, 1);
+    readonly InputHandler input = new(server.Input);
+    string[] permissions = [];
 
     public string? DeviceId { get; private set; }
 
@@ -122,6 +130,11 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         catch (Exception e) when (e is WebSocketException or OperationCanceledException or IOException)
         {
             // Телефон пропал из сети — это нормально.
+        }
+        finally
+        {
+            // Чтобы на ПК не «залип» Ctrl или зажатая кнопка мыши.
+            input.ReleaseAll();
         }
     }
 
@@ -155,6 +168,15 @@ internal sealed class Session(AgentServer server, WebSocket ws)
             case "bye":
                 await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
                 break;
+            case var _ when InputHandler.Handles(type):
+                if (!permissions.Contains("input"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Управление мышью и клавиатурой выключено на компьютере"));
+                    break;
+                }
+                if (input.Handle(msg) is { } problem)
+                    await SendAsync(Message.Error(Protocol.Errors.BadMessage, problem));
+                break;
             default:
                 await SendAsync(Message.Error(Protocol.Errors.BadMessage, $"Неизвестный тип «{type}»"));
                 break;
@@ -186,6 +208,7 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         var token = server.Devices.Add(deviceId, name, platform);
         var device = server.Devices.All.First(d => d.DeviceId == deviceId);
         DeviceId = deviceId;
+        permissions = Protocol.DefaultPermissions;
         await SendAsync(Message.Build("paired", ("token", token), ("agent", server.Info())));
         server.OnAuthenticated(this, device, justPaired: true);
     }
@@ -201,6 +224,7 @@ internal sealed class Session(AgentServer server, WebSocket ws)
             return;
         }
         DeviceId = device.DeviceId;
+        permissions = Protocol.DefaultPermissions;
         await SendAsync(Message.Build("welcome", ("agent", server.Info()), ("permissions", Protocol.DefaultPermissions)));
         server.OnAuthenticated(this, device, justPaired: false);
     }

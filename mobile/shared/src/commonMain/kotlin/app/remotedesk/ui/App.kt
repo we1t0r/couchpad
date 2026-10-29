@@ -29,6 +29,7 @@ import app.remotedesk.core.LinkState
 import app.remotedesk.core.PairingLink
 import app.remotedesk.core.PcDiscovery
 import app.remotedesk.core.PcStore
+import app.remotedesk.core.RemoteSettings
 import app.remotedesk.resources.Res
 import app.remotedesk.resources.action_cancel
 import app.remotedesk.resources.action_connect
@@ -52,6 +53,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun App(
     store: PcStore,
+    remoteSettings: RemoteSettings,
     discovery: PcDiscovery,
     device: DeviceInfo,
     scanQr: (onResult: (String?) -> Unit) -> Unit,
@@ -64,7 +66,9 @@ fun App(
         val found by discovery.found.collectAsState()
         val link by controller.state.collectAsState()
         val incoming by incomingLinks.collectAsState()
+        val touchpad by remoteSettings.touchpad.collectAsState()
         val snackbar = remember { SnackbarHostState() }
+        var showSettings by remember { mutableStateOf(false) }
 
         var confirmLink by remember { mutableStateOf<PairingLink?>(null) }
         var foundHelp by remember { mutableStateOf<FoundPc?>(null) }
@@ -94,7 +98,14 @@ fun App(
             }
         }
 
-        when (val state = link) {
+        if (showSettings) {
+            SettingsScreen(
+                settings = touchpad,
+                onChange = remoteSettings::update,
+                onReset = remoteSettings::reset,
+                onBack = { showSettings = false },
+            )
+        } else when (val state = link) {
             LinkState.Idle -> HomeScreen(
                 pcs = pcs,
                 found = found,
@@ -103,8 +114,11 @@ fun App(
                 onFound = { foundHelp = it },
                 onScan = scan,
                 onPaste = { pasting = true },
+                onOpenSettings = { showSettings = true },
             )
             else -> PcScreen(
+                settings = touchpad,
+                onOpenSettings = { showSettings = true },
                 state = state,
                 pc = when (state) {
                     is LinkState.Connecting -> state.pcId

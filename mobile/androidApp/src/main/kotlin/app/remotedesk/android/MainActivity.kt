@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import app.remotedesk.core.NsdPcDiscovery
 import app.remotedesk.core.PcStore
+import app.remotedesk.core.RemoteSettings
 import app.remotedesk.ui.App
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -29,13 +30,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) incomingLinks.value = intent?.dataString
 
-        val store = PcStore(SharedPreferencesSettings(getSharedPreferences("remotedesk", MODE_PRIVATE)))
+        val prefs = SharedPreferencesSettings(getSharedPreferences("remotedesk", MODE_PRIVATE))
+        val store = PcStore(prefs)
+        val remoteSettings = RemoteSettings(prefs)
         val device = store.device(deviceName(), "android")
         discovery = NsdPcDiscovery(applicationContext)
 
         setContent {
             App(
                 store = store,
+                remoteSettings = remoteSettings,
                 discovery = discovery,
                 device = device,
                 scanQr = { onResult ->

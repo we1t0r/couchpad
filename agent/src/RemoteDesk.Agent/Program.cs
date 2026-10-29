@@ -10,7 +10,8 @@ static class Program
     ///   --data-dir путь   своя папка данных (по умолчанию %APPDATA%\RemoteDesk);
     ///   --port N          свой порт (по умолчанию 47800);
     ///   --loopback        слушать только 127.0.0.1 и не объявляться в сети (для разработки);
-    ///   --dev-link файл   записать ссылку сопряжения в файл (для автотестов приложения).
+    ///   --dev-link файл   записать ссылку сопряжения в файл (для автотестов приложения);
+    ///   --input-log файл  не трогать мышь и клавиатуру, а записывать ввод в файл (для автотестов).
     /// </summary>
     [STAThread]
     static int Main(string[] args)
@@ -57,10 +58,14 @@ static class Program
         var dataDir = AgentOptions.DefaultDataDir;
         var port = Protocol.DefaultPort;
         var loopback = false;
+        IInputSink? input = null;
         for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
+                case "--input-log" when i + 1 < args.Length:
+                    input = new RecordingInput(args[++i]);
+                    break;
                 case "--data-dir" when i + 1 < args.Length:
                     dataDir = args[++i];
                     break;
@@ -73,6 +78,6 @@ static class Program
                     break;
             }
         }
-        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback);
+        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input);
     }
 }

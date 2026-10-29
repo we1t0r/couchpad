@@ -24,6 +24,7 @@ public static class Protocol
         public const string Revoked = "revoked";
         public const string BadMessage = "bad_message";
         public const string UnsupportedVersion = "unsupported_version";
+        public const string Forbidden = "forbidden";
     }
 }
 
@@ -70,4 +71,10 @@ public static class Message
 
     public static long? Num(this JsonObject obj, string key) =>
         obj[key] is JsonValue v && v.TryGetValue<long>(out var n) ? n : null;
+
+    public static double? Dbl(this JsonObject obj, string key) =>
+        obj[key] is JsonValue v && v.TryGetValue<double>(out var d) && double.IsFinite(d) ? d : null;
+
+    public static bool? Bool(this JsonObject obj, string key) =>
+        obj[key] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : null;
 }

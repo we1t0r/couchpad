@@ -48,7 +48,7 @@
     <string name="info_mac">Adapters for turning on over the network (Wake-on-LAN)</string>
     <string name="info_wired">wired</string>
     <string name="info_wireless">wireless</string>
-    <string name="coming_soon">The touchpad, keyboard, power buttons, files and screen are coming in the next versions. For now the app checks the connection.</string>
+    <string name="coming_soon">Power and monitor buttons, files, clipboard and the screen are coming in the next versions.</string>
     <string name="details">Technical details</string>
 
     <string name="problem_unreachable_title">The computer is not responding</string>
@@ -71,4 +71,87 @@
     <string name="problem_protocol_text">The computer answered something the app doesn’t understand. Try updating RemoteDesk.</string>
     <string name="problem_closed_title">The connection was closed</string>
     <string name="problem_closed_text">The computer closed the connection: RemoteDesk was turned off, or the computer went to sleep.</string>
+
+    <string name="tab_touchpad">Touchpad</string>
+    <string name="tab_keyboard">Keyboard</string>
+    <string name="tab_info">About PC</string>
+    <string name="button_left">Left</string>
+    <string name="button_right">Right</string>
+    <string name="button_middle">Middle</string>
+    <string name="touchpad_hint">Slide a finger to move the pointer. Tap to click, two fingers to scroll, tap with two fingers for a right click.</string>
+    <string name="scroll_strip">Scroll strip</string>
+
+    <string name="kb_field">Text for the computer</string>
+    <string name="kb_field_hint">Type here</string>
+    <string name="kb_field_explain">Whatever you type or dictate appears on the computer right away — in any keyboard layout, emoji included. The Send key on your keyboard is Enter.</string>
+    <string name="kb_clear">Clear the field</string>
+    <string name="kb_modifiers">Sticky keys — apply to the next key</string>
+    <string name="kb_keys">Keys</string>
+    <string name="kb_shortcuts">Shortcuts</string>
+    <string name="kb_media">Music and volume</string>
+
+    <string name="sc_copy">Copy</string>
+    <string name="sc_paste">Paste</string>
+    <string name="sc_cut">Cut</string>
+    <string name="sc_undo">Undo</string>
+    <string name="sc_redo">Redo</string>
+    <string name="sc_select_all">Select all</string>
+    <string name="sc_alt_tab">Switch window</string>
+    <string name="sc_close">Close window</string>
+    <string name="sc_desktop">Show desktop</string>
+    <string name="sc_explorer">File Explorer</string>
+    <string name="sc_start">Start</string>
+    <string name="sc_task_manager">Task Manager</string>
+    <string name="sc_screenshot">Screenshot</string>
+    <string name="sc_refresh">Refresh (F5)</string>
+    <string name="sc_fullscreen">Full screen (F11)</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_basic">Touchpad</string>
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_more">More info</string>
+    <string name="settings_reset">Reset to defaults</string>
+    <string name="settings_reset_text">All remote control settings will return to their defaults. Your computers and connections are not affected.</string>
+    <string name="settings_reset_confirm">Reset</string>
+    <string name="action_ok">Got it</string>
+
+    <string name="s_sensitivity_title">Pointer speed</string>
+    <string name="s_sensitivity_sub">How far the pointer travels per finger movement</string>
+    <string name="s_sensitivity_info">Pointer speed multiplier. Higher crosses the screen with less movement but is harder to aim. For a large or 4K monitor, try ×1.5–2. Default: ×1.</string>
+    <string name="s_scroll_title">Scroll speed</string>
+    <string name="s_scroll_sub">How much a page moves per two-finger swipe</string>
+    <string name="s_scroll_info">How many mouse wheel clicks a two-finger swipe or the scroll strip produces. Higher scrolls faster. Default: ×1 (about one click per centimetre).</string>
+    <string name="s_tap_title">Tap to click</string>
+    <string name="s_tap_sub">A tap on the touchpad is a left click</string>
+    <string name="s_tap_info">When off, you click only with the buttons below, and accidental touches won’t click things. Two-finger tap (right click) is turned off too. Default: on.</string>
+    <string name="s_vibration_title">Vibration</string>
+    <string name="s_vibration_sub">A light buzz on clicks and key presses</string>
+    <string name="s_vibration_info">A short vibration on clicks, mouse buttons and keys, so you can feel that a press worked without looking at the phone. Also depends on the system “Touch feedback” setting. Default: on.</string>
+    <string name="s_buttons_title">Mouse button size</string>
+    <string name="s_buttons_sub">Height of the Left and Right buttons below the touchpad</string>
+    <string name="s_buttons_info">Larger buttons are easier to find with your thumb; smaller ones leave more room for the touchpad. Default: medium.</string>
+    <string name="size_small">Small</string>
+    <string name="size_medium">Medium</string>
+    <string name="size_large">Large</string>
+    <string name="s_lefty_title">Left-handed</string>
+    <string name="s_lefty_sub">Mirror the buttons and the scroll strip</string>
+    <string name="s_lefty_info">The right mouse button moves to the left, the left one to the right, and the scroll strip to the left edge. The buttons on the computer itself are not swapped. Default: off.</string>
+    <string name="s_screen_title">Keep screen on</string>
+    <string name="s_screen_sub">The phone screen stays on while the remote is open</string>
+    <string name="s_screen_info">Handy for movies and presentations: the phone won’t fall asleep while you control the computer. Uses a bit more battery. As soon as you leave the remote, the screen turns off as usual. Default: on.</string>
+    <string name="s_accel_title">Pointer acceleration</string>
+    <string name="s_accel_sub">Fast finger movement sends the pointer further</string>
+    <string name="s_accel_info">Slow movement follows your finger precisely; fast movement speeds the pointer up to cross the screen in one swipe. 0% means constant speed. Windows may add its own acceleration (“Enhance pointer precision” in mouse settings). Default: 50%.</string>
+    <string name="s_invert_title">Reverse scrolling</string>
+    <string name="s_invert_sub">Finger down scrolls the page down, like a mouse wheel</string>
+    <string name="s_invert_info">By default scrolling works like a laptop touchpad or a phone: move your fingers up and the text moves up. Turn this on if you prefer the mouse wheel direction. Default: off.</string>
+    <string name="s_drag_title">Double-tap to drag</string>
+    <string name="s_drag_sub">Tap, then touch and slide to drag</string>
+    <string name="s_drag_info">Tap and touch again right away, then slide without lifting your finger — this drags windows and files. To tell it apart from a click, a single tap waits about a quarter of a second. Turn off for instant clicks: you can still drag by holding the Left button and sliding another finger. Default: on.</string>
+    <string name="s_middle_title">Middle mouse button</string>
+    <string name="s_middle_sub">A Middle button between Left and Right</string>
+    <string name="s_middle_info">The middle button (pressing the wheel) opens links in a new tab and closes browser tabs. A three-finger tap does the same. Default: off.</string>
+    <string name="s_strip_title">Scroll strip</string>
+    <string name="s_strip_sub">A narrow strip at the touchpad edge for one-finger scrolling</string>
+    <string name="s_strip_info">Slide a finger up and down the strip to scroll, like a mouse wheel. Handy when holding the phone in one hand. Default: on.</string>
 </resources>

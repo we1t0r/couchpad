@@ -48,7 +48,7 @@
     <string name="info_mac">Адаптеры для включения по сети (Wake-on-LAN)</string>
     <string name="info_wired">проводной</string>
     <string name="info_wireless">беспроводной</string>
-    <string name="coming_soon">Тачпад, клавиатура, кнопки питания, файлы и экран появятся в следующих версиях. Сейчас приложение проверяет связь.</string>
+    <string name="coming_soon">Кнопки питания и мониторов, файлы, буфер обмена и экран появятся в следующих версиях.</string>
     <string name="details">Технические подробности</string>
 
     <string name="problem_unreachable_title">Компьютер не отвечает</string>
@@ -71,4 +71,87 @@
     <string name="problem_protocol_text">Компьютер ответил то, что приложение не понимает. Попробуйте обновить RemoteDesk.</string>
     <string name="problem_closed_title">Соединение закрыто</string>
     <string name="problem_closed_text">Компьютер закрыл соединение: RemoteDesk выключили, или компьютер ушёл в сон.</string>
+
+    <string name="tab_touchpad">Тачпад</string>
+    <string name="tab_keyboard">Клавиатура</string>
+    <string name="tab_info">О ПК</string>
+    <string name="button_left">ЛКМ</string>
+    <string name="button_right">ПКМ</string>
+    <string name="button_middle">СКМ</string>
+    <string name="touchpad_hint">Водите пальцем — двигается курсор. Тап — щелчок, двумя пальцами — прокрутка, тап двумя — правая кнопка.</string>
+    <string name="scroll_strip">Полоса прокрутки</string>
+
+    <string name="kb_field">Текст для компьютера</string>
+    <string name="kb_field_hint">Печатайте здесь</string>
+    <string name="kb_field_explain">Всё, что вы печатаете или надиктовываете, сразу появляется на компьютере — в любой раскладке, с эмодзи. Кнопка «Отправить» на клавиатуре — это Enter.</string>
+    <string name="kb_clear">Очистить поле</string>
+    <string name="kb_modifiers">Залипающие клавиши — сработают со следующей</string>
+    <string name="kb_keys">Клавиши</string>
+    <string name="kb_shortcuts">Сочетания</string>
+    <string name="kb_media">Музыка и громкость</string>
+
+    <string name="sc_copy">Копировать</string>
+    <string name="sc_paste">Вставить</string>
+    <string name="sc_cut">Вырезать</string>
+    <string name="sc_undo">Отменить</string>
+    <string name="sc_redo">Повторить</string>
+    <string name="sc_select_all">Выделить всё</string>
+    <string name="sc_alt_tab">Сменить окно</string>
+    <string name="sc_close">Закрыть окно</string>
+    <string name="sc_desktop">Рабочий стол</string>
+    <string name="sc_explorer">Проводник</string>
+    <string name="sc_start">Пуск</string>
+    <string name="sc_task_manager">Диспетчер задач</string>
+    <string name="sc_screenshot">Скриншот</string>
+    <string name="sc_refresh">Обновить (F5)</string>
+    <string name="sc_fullscreen">Во весь экран (F11)</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_basic">Тачпад</string>
+    <string name="settings_advanced">Для опытных</string>
+    <string name="settings_more">Подробнее</string>
+    <string name="settings_reset">Сбросить к значениям по умолчанию</string>
+    <string name="settings_reset_text">Все настройки пульта вернутся к исходным. Компьютеры и подключения не пострадают.</string>
+    <string name="settings_reset_confirm">Сбросить</string>
+    <string name="action_ok">Понятно</string>
+
+    <string name="s_sensitivity_title">Скорость курсора</string>
+    <string name="s_sensitivity_sub">Насколько далеко уходит курсор за движение пальца</string>
+    <string name="s_sensitivity_info">Множитель скорости курсора. Больше — курсор проходит экран за меньшее движение, но целиться труднее. Если у компьютера большой или 4K-монитор, попробуйте ×1,5–2. По умолчанию ×1.</string>
+    <string name="s_scroll_title">Скорость прокрутки</string>
+    <string name="s_scroll_sub">Сколько страницы проезжает за движение двумя пальцами</string>
+    <string name="s_scroll_info">Сколько щелчков колеса мыши получается из движения двумя пальцами или по полосе прокрутки. Больше — быстрее листается. По умолчанию ×1 (примерно щелчок на сантиметр).</string>
+    <string name="s_tap_title">Щелчок касанием</string>
+    <string name="s_tap_sub">Тап по тачпаду — щелчок левой кнопкой</string>
+    <string name="s_tap_info">Если выключить, щёлкать можно только кнопками внизу, а случайные касания не будут нажимать на что попало. Тап двумя пальцами (правая кнопка) тоже выключится. По умолчанию включено.</string>
+    <string name="s_vibration_title">Вибрация</string>
+    <string name="s_vibration_sub">Лёгкий отклик на щелчки и нажатия</string>
+    <string name="s_vibration_info">Короткая вибрация при щелчке, нажатии кнопок мыши и клавиш, чтобы чувствовать, что нажатие сработало, не глядя на телефон. Зависит и от системной настройки «Виброотклик». По умолчанию включено.</string>
+    <string name="s_buttons_title">Размер кнопок мыши</string>
+    <string name="s_buttons_sub">Высота кнопок ЛКМ и ПКМ под тачпадом</string>
+    <string name="s_buttons_info">Крупные кнопки проще нащупать большим пальцем, мелкие оставляют больше места тачпаду. По умолчанию — средние.</string>
+    <string name="size_small">Маленькие</string>
+    <string name="size_medium">Средние</string>
+    <string name="size_large">Крупные</string>
+    <string name="s_lefty_title">Для левой руки</string>
+    <string name="s_lefty_sub">Кнопки и полоса прокрутки зеркально</string>
+    <string name="s_lefty_info">Правая кнопка мыши окажется слева, левая — справа, полоса прокрутки — у левого края. Сами кнопки на компьютере не меняются местами. По умолчанию выключено.</string>
+    <string name="s_screen_title">Не гасить экран</string>
+    <string name="s_screen_sub">Пока открыт пульт, экран телефона не выключается</string>
+    <string name="s_screen_info">Удобно смотреть фильм или презентацию: телефон не уснёт посреди управления. Расходует немного больше заряда. Как только вы выходите из пульта, телефон снова гаснет как обычно. По умолчанию включено.</string>
+    <string name="s_accel_title">Ускорение курсора</string>
+    <string name="s_accel_sub">Быстрое движение пальца уводит курсор дальше</string>
+    <string name="s_accel_info">При медленном движении курсор идёт точно за пальцем, при быстром — разгоняется, чтобы одним взмахом пересечь экран. 0% — скорость постоянная. Учтите, что Windows может добавлять своё ускорение («Повышенная точность установки указателя» в настройках мыши). По умолчанию 50%.</string>
+    <string name="s_invert_title">Обратная прокрутка</string>
+    <string name="s_invert_sub">Палец вниз — страница вниз, как колесо мыши</string>
+    <string name="s_invert_info">Обычно прокрутка как на тачпаде ноутбука и на телефоне: тянете пальцы вверх — текст едет вверх. Включите, если привыкли к колесу мыши, где наоборот. По умолчанию выключено.</string>
+    <string name="s_drag_title">Перетаскивание двойным касанием</string>
+    <string name="s_drag_sub">Тап, затем коснуться и вести — перетащить</string>
+    <string name="s_drag_info">Тапните и сразу коснитесь снова, не отрывая пальца ведите — так перетаскиваются окна и файлы. Чтобы отличить это от простого щелчка, одиночный тап срабатывает с задержкой примерно в четверть секунды. Выключите, если важна мгновенная реакция: перетаскивать можно, зажав кнопку ЛКМ и ведя вторым пальцем. По умолчанию включено.</string>
+    <string name="s_middle_title">Средняя кнопка мыши</string>
+    <string name="s_middle_sub">Кнопка СКМ между ЛКМ и ПКМ</string>
+    <string name="s_middle_info">Средняя кнопка (нажатие на колесо) открывает ссылку в новой вкладке и закрывает вкладки в браузере. Тот же щелчок даёт тап тремя пальцами. По умолчанию выключено.</string>
+    <string name="s_strip_title">Полоса прокрутки</string>
+    <string name="s_strip_sub">Узкая полоса у края тачпада для прокрутки одним пальцем</string>
+    <string name="s_strip_info">Ведите пальцем по полосе вверх и вниз — страница листается, как колесом мыши. Удобно держать телефон одной рукой. По умолчанию включено.</string>
 </resources>

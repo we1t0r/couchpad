@@ -1,6 +1,13 @@
 package app.remotedesk.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.runtime.saveable.rememberSaveable
+import app.remotedesk.core.TouchpadSettings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +65,8 @@ fun PcScreen(
     onRetry: (pcId: String) -> Unit,
     onRescan: () -> Unit,
     onForget: (pcId: String) -> Unit,
+    settings: TouchpadSettings,
+    onOpenSettings: () -> Unit,
 ) {
     val title = pc?.name ?: when (state) {
         is LinkState.Connecting -> state.name
@@ -73,13 +82,27 @@ fun PcScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                title = {
+                    Column {
+                        Text(title, maxLines = 1)
+                        if (state is LinkState.Connected) {
+                            Text(
+                                state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.connected),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Green,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.settings_title))
+                    }
                     if (pc != null) {
                         IconButton(onClick = { menu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.action_more))
@@ -98,15 +121,18 @@ fun PcScreen(
             )
         },
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            when (state) {
-                is LinkState.Connecting -> Connecting(state)
-                is LinkState.Connected -> Connected(state, pc)
-                is LinkState.Failed -> Failed(state, canRetry = pc != null && !pc.revoked, onRetry = { pc?.let { onRetry(it.id) } }, onRescan = onRescan)
-                LinkState.Idle -> Unit
+        if (state is LinkState.Connected) {
+            RemoteControl(state, pc, settings, Modifier.fillMaxSize().padding(padding))
+        } else {
+            Column(
+                Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                when (state) {
+                    is LinkState.Connecting -> Connecting(state)
+                    is LinkState.Failed -> Failed(state, canRetry = pc != null && !pc.revoked, onRetry = { pc?.let { onRetry(it.id) } }, onRescan = onRescan)
+                    else -> Unit
+                }
             }
         }
     }
@@ -124,6 +150,43 @@ fun PcScreen(
             },
             dismissButton = { TextButton(onClick = { forgetting = false }) { Text(stringResource(Res.string.action_cancel)) } },
         )
+    }
+}
+
+private enum class Tab(val label: StringResource, val icon: String) {
+    Touchpad(Res.string.tab_touchpad, "🖱"),
+    Keyboard(Res.string.tab_keyboard, "⌨"),
+    Info(Res.string.tab_info, "ℹ"),
+}
+
+/** Пульт: тачпад, клавиатура и сведения о ПК — вкладками внизу. */
+@Composable
+private fun RemoteControl(state: LinkState.Connected, pc: SavedPc?, settings: TouchpadSettings, modifier: Modifier) {
+    var tab by rememberSaveable { mutableStateOf(Tab.Touchpad) }
+    val input = state.connection.input
+    KeepScreenOn(settings.keepScreenOn)
+
+    Column(modifier) {
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when (tab) {
+                Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
+                Tab.Keyboard -> KeyboardPanel(input, settings, Modifier.fillMaxSize())
+                Tab.Info -> Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) { Connected(state, pc) }
+            }
+        }
+        NavigationBar(windowInsets = WindowInsets(0)) {
+            Tab.entries.forEach { t ->
+                NavigationBarItem(
+                    selected = tab == t,
+                    onClick = { tab = t },
+                    icon = { Text(t.icon, style = MaterialTheme.typography.titleLarge) },
+                    label = { Text(stringResource(t.label)) },
+                )
+            }
+        }
     }
 }
 

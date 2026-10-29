@@ -18,6 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
+import app.remotedesk.resources.settings_title
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -63,12 +66,22 @@ fun HomeScreen(
     onFound: (FoundPc) -> Unit,
     onScan: () -> Unit,
     onPaste: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val onlineIds = found.map { it.id }.toSet()
     val newOnes = found.filter { f -> pcs.none { it.id == f.id } }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.app_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(Res.string.app_title)) },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.settings_title))
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(

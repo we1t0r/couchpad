@@ -9,11 +9,12 @@ namespace RemoteDesk.Agent.Tests;
 public sealed class ServerTests : IAsyncLifetime
 {
     readonly string dir = Path.Combine(Path.GetTempPath(), "rdesk-test-" + Guid.NewGuid().ToString("N"));
+    readonly RecordingInput input = new();
     AgentHost host = null!;
 
     public async Task InitializeAsync()
     {
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true));
+        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true, Input: input));
         await host.StartAsync();
     }
 
@@ -165,6 +166,40 @@ public sealed class ServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Input_is_rejected_before_auth_and_released_on_disconnect()
+    {
+        using (var anonymous = await ConnectAsync())
+        {
+            await SendAsync(anonymous, Message.Build("move", ("dx", 10), ("dy", 10)));
+            Assert.Equal(Protocol.Errors.NotAuthenticated, (await ReceiveAsync(anonymous)).Str("code"));
+        }
+        Assert.Empty(input.Lines);
+
+        var token = await PairAsync();
+        var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(ws);
+
+        await SendAsync(ws, Message.Build("key", ("k", "ctrl"), ("down", true)));
+        await SendAsync(ws, Message.Build("button", ("b", "left"), ("down", true)));
+        await SendAsync(ws, Message.Build("key", ("k", "nope"), ("down", true)));
+        Assert.Equal(Protocol.Errors.BadMessage, (await ReceiveAsync(ws)).Str("code"));
+
+        // Телефон «пропал», не отпустив Ctrl и ЛКМ.
+        ws.Abort();
+        ws.Dispose();
+        await WaitUntil(() => input.Lines.Count >= 4);
+
+        Assert.Equal(["key 0x11 down", "button left down", "button left up", "key 0x11 up"], input.Lines);
+    }
+
+    static async Task WaitUntil(Func<bool> condition)
+    {
+        for (var i = 0; i < 100 && !condition(); i++)
+            await Task.Delay(50);
+    }
+
+    [Fact]
     public void Pairing_link_contains_everything_for_qr()
     {
         var link = new Uri(host.PairingLink(["192.168.0.10"]));
@@ -186,7 +221,7 @@ public sealed class ServerTests : IAsyncLifetime
         var fp = host.Identity.Fingerprint;
         await host.DisposeAsync();
 
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true));
+        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true, Input: input));
         await host.StartAsync();
 
         Assert.Equal(id, host.Identity.Id);

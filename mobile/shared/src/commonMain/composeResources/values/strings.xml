@@ -165,7 +165,7 @@
     <string name="pw_monitors_off">Turn off monitors</string>
     <string name="pw_monitors_on">Turn on monitors</string>
     <string name="pw_monitors_hint_any">The computer keeps running: music, downloads and games are not interrupted. The monitors wake up on touchpad or mouse movement or a key press on the PC.</string>
-    <string name="pw_monitors_hint_app">The computer keeps running. The monitors wake up only with the “Turn on monitors” button or a key on the PC keyboard — an accidental mouse bump won’t wake them.</string>
+    <string name="pw_monitors_hint_app">The computer keeps running. The monitors wake up with the “Turn on monitors” button or a key on the PC keyboard. If the mouse gets bumped, the screen briefly flashes and turns off again.</string>
     <string name="pw_later">Later…</string>
     <string name="pw_computer">Computer</string>
     <string name="pw_timer">Timer</string>
@@ -186,5 +186,5 @@
     <string name="s_confirm_info">Before shutting down, restarting, sleeping, hibernating or signing out, the app asks if you are sure and lets you pick a time. Without confirmation the buttons work instantly — handy, but easy to mis-tap. Lock and monitors never ask. Default: on.</string>
     <string name="s_wake_title">Wake monitors only with the button</string>
     <string name="s_wake_sub">An accidental mouse movement won’t turn the monitors back on</string>
-    <string name="s_wake_info">Normally, turned-off monitors wake up on any mouse movement — including bumping the mouse at night or sliding on the touchpad. With this setting only the “Turn on monitors” button in the app wakes them. Any key on the computer keyboard always wakes them, so the computer stays usable without the phone. Default: off.</string>
+    <string name="s_wake_info">Normally, turned-off monitors wake up on any mouse movement — including bumping the mouse at night or sliding on the touchpad. With this setting only the “Turn on monitors” button in the app wakes them: if the mouse wakes them, the computer turns them off again half a second later (the screen briefly flashes). Any key on the computer keyboard always wakes them, so the computer stays usable without the phone. If the screen keeps waking up again and again (for example, the mouse jitters by itself), the mode turns off so the screen doesn’t keep flashing. Default: off.</string>
 </resources>

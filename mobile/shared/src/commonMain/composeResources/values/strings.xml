@@ -200,4 +200,46 @@
     <string name="wol_how_to_test">How to test: shut the computer down (Start → Shut down), wait 10 seconds and tap “Turn on” on the home screen. The phone must be on the same Wi-Fi. A computer that is off can’t be turned on over the internet — only from home.</string>
     <string name="wol_open_wizard">Open wizard on PC</string>
     <string name="wol_recheck">Check again</string>
+
+    <string name="tab_files">Files</string>
+    <string name="files_title">Computer folders</string>
+    <string name="files_roots_hint">Only folders shared with the phone are shown. To add others or allow writing, on the PC: RemoteDesk icon → “Folders for phone…”.</string>
+    <string name="files_rw">read and write</string>
+    <string name="files_ro">view and download only</string>
+    <string name="files_read_only">This folder is read-only: you can download files but not upload or delete.</string>
+    <string name="files_search">Search in folder</string>
+    <string name="files_upload">Upload here</string>
+    <string name="files_new_folder">New folder</string>
+    <string name="files_empty">Empty</string>
+    <string name="files_download">Download to phone</string>
+    <string name="files_open_pc">Open on computer</string>
+    <string name="files_opened">“%1$s” opened on the computer</string>
+    <string name="files_rename">Rename</string>
+    <string name="files_delete">Delete</string>
+    <string name="files_delete_title">Delete “%1$s”?</string>
+    <string name="files_delete_text">The file goes to the Windows Recycle Bin — it can be restored on the computer.</string>
+    <string name="files_unreachable">The computer is not responding. Check the connection and tap Refresh.</string>
+    <string name="files_transfers">Transfers</string>
+    <string name="files_clear">Clear finished</string>
+    <string name="files_done">done</string>
+    <string name="files_failed">failed</string>
+    <string name="files_open">Open</string>
+    <string name="files_keep_both">Keep both</string>
+    <string name="files_replace">Replace</string>
+
+    <string name="kb_clipboard">Clipboard</string>
+    <string name="clip_from_pc">Get from PC</string>
+    <string name="clip_to_pc">Send to PC</string>
+    <string name="clip_history">Recent — tap to copy to the phone; ⬆ to send to the PC</string>
+    <string name="clip_got">Text from the computer copied to the phone</string>
+    <string name="clip_sent">Text sent to the computer’s clipboard</string>
+    <string name="clip_copied">Copied to the phone</string>
+    <string name="clip_pc_empty">There is no text on the computer’s clipboard</string>
+    <string name="clip_phone_empty">There is no text on the phone’s clipboard — copy something first</string>
+    <string name="clip_failed">The computer didn’t answer — try again</string>
+
+    <string name="share_title">Send to the computer?</string>
+    <string name="share_text">%1$s file(s) → “%2$s”. They are saved to the computer’s Downloads folder; if a name is taken, next to it with a number.</string>
+    <string name="share_no_pc">Connect a computer first: open RemoteDesk and scan the QR code.</string>
+    <string name="share_send">Send</string>
 </resources>

@@ -261,6 +261,20 @@ public sealed class ServerTests : IAsyncLifetime
         Assert.Equal(1, opened);
     }
 
+    [Fact]
+    public async Task Clipboard_get_and_set()
+    {
+        var token = await PairAsync();
+        using var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(ws);
+
+        await SendAsync(ws, Message.Build("clip_set", ("text", "с телефона")));
+        Assert.Equal("clip_done", (await ReceiveAsync(ws)).Str("t"));
+        await SendAsync(ws, Message.Build("clip_get"));
+        Assert.Equal("с телефона", (await ReceiveAsync(ws)).Str("text"));
+    }
+
     [Theory]
     [InlineData("192.168.0.102", "255.255.255.0", "192.168.0.255")]
     [InlineData("10.1.2.3", "255.255.0.0", "10.1.255.255")]

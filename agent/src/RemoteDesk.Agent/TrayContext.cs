@@ -12,6 +12,8 @@ sealed class TrayContext : ApplicationContext
     DevicesForm? devicesForm;
     PowerWarningForm? warningForm;
     WolForm? wolForm;
+    SharesForm? sharesForm;
+    string? lastReceived;
     readonly ToolStripMenuItem cancelTimerItem;
 
     public TrayContext(AgentHost host, bool showPairing)
@@ -21,6 +23,7 @@ sealed class TrayContext : ApplicationContext
         var menu = new ContextMenuStrip();
         menu.Items.Add("Подключить телефон…", null, (_, _) => ShowPairing());
         menu.Items.Add("Телефоны…", null, (_, _) => ShowDevices());
+        menu.Items.Add("Папки для телефона…", null, (_, _) => ShowShares());
         menu.Items.Add("Включение по сети…", null, (_, _) => ShowWol());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выход", null, (_, _) => ExitThread());
@@ -50,6 +53,18 @@ sealed class TrayContext : ApplicationContext
         host.Power.Changed += timer => ui.Post(_ => OnTimerChanged(timer), null);
         host.Power.Warning += timer => ui.Post(_ => ShowWarning(timer), null);
         host.Server.WolSetupRequested += () => ui.Post(_ => ShowWol(), null);
+        host.Files.Received += path => ui.Post(_ =>
+        {
+            lastReceived = path;
+            tray.ShowBalloonTip(5000, "Файл с телефона", $"{Path.GetFileName(path)} — сохранён в {Path.GetDirectoryName(path)}. Нажмите, чтобы открыть папку.", ToolTipIcon.Info);
+        }, null);
+        // Щелчок по уведомлению о файле — показать его в Проводнике.
+        tray.BalloonTipClicked += (_, _) =>
+        {
+            if (lastReceived is { } path && File.Exists(path))
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"")?.Dispose();
+        };
+        tray.BalloonTipClosed += (_, _) => lastReceived = null;
         host.Power.Failed += (action, error) => ui.Post(_ =>
             tray.ShowBalloonTip(6000, "Не получилось", error, ToolTipIcon.Warning), null);
 
@@ -103,6 +118,14 @@ sealed class TrayContext : ApplicationContext
         pairForm.Activate();
     }
 
+    void ShowShares()
+    {
+        if (sharesForm is null || sharesForm.IsDisposed)
+            sharesForm = new SharesForm(host.Shares);
+        sharesForm.Show();
+        sharesForm.Activate();
+    }
+
     void ShowWol()
     {
         if (wolForm is null || wolForm.IsDisposed)
@@ -127,6 +150,7 @@ sealed class TrayContext : ApplicationContext
         devicesForm?.Close();
         warningForm?.Close();
         wolForm?.Close();
+        sharesForm?.Close();
         base.ExitThreadCore();
     }
 }

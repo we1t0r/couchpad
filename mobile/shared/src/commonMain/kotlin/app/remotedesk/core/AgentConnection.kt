@@ -105,6 +105,20 @@ class AgentConnection private constructor(
     /** Спросить агента о настройках включения по сети; [openWizard] — ещё и открыть мастер на экране ПК. */
     fun checkWol(openWizard: Boolean = false) = enqueue(message(if (openWizard) "wol_setup" else "wol_check"))
 
+    private val clipReplies = MutableSharedFlow<JsonObject>(extraBufferCapacity = 4)
+
+    /** Текст из буфера обмена ПК. */
+    suspend fun clipboardGet(): String = withTimeout(10_000) {
+        clipReplies.onSubscription { enqueue(message("clip_get")) }.first { it.type == "clip" }.str("text").orEmpty()
+    }
+
+    /** Положить текст в буфер обмена ПК. */
+    suspend fun clipboardSet(text: String) {
+        withTimeout(10_000) {
+            clipReplies.onSubscription { enqueue(message("clip_set", "text" to text)) }.first { it.type == "clip_done" }
+        }
+    }
+
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
@@ -139,6 +153,7 @@ class AgentConnection private constructor(
                     "pong" -> msg.num("n")?.let { pongs.emit(it) }
                     "power_timer" -> _powerTimer.value = RemotePower.parseTimer(msg)
                     "wol_status" -> _wolStatus.value = WolStatus.parse(msg)
+                    "clip", "clip_done" -> clipReplies.emit(msg)
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))
                         // Ошибка, после которой агент закрывает соединение, — запоминаем её как причину.

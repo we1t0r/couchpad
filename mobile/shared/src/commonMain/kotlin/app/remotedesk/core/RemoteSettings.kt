@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 
 enum class ButtonSize(val heightDp: Int) { Small(56), Medium(72), Large(96) }
 
@@ -47,6 +49,29 @@ class RemoteSettings(private val settings: Settings) {
 
     fun reset() = update { TouchpadSettings() }
 
+    private val _clipHistory = MutableStateFlow(loadHistory())
+
+    /** Последние 20 текстов, которые ходили через буфер обмена (новые сверху). */
+    val clipHistory: StateFlow<List<String>> = _clipHistory.asStateFlow()
+
+    fun addClip(text: String) {
+        if (text.isBlank()) return
+        val list = (listOf(text) + _clipHistory.value.filter { it != text }).take(MAX_HISTORY)
+        _clipHistory.value = list
+        settings.putString(KEY_HISTORY, ProtocolJson.encodeToString(ListSerializer(String.serializer()), list))
+    }
+
+    fun clearClips() {
+        _clipHistory.value = emptyList()
+        settings.remove(KEY_HISTORY)
+    }
+
+    private fun loadHistory(): List<String> = try {
+        settings.getStringOrNull(KEY_HISTORY)?.let { ProtocolJson.decodeFromString(ListSerializer(String.serializer()), it) }
+    } catch (_: Exception) {
+        null
+    }.orEmpty()
+
     private fun load(): TouchpadSettings = try {
         settings.getStringOrNull(KEY)?.let { ProtocolJson.decodeFromString(TouchpadSettings.serializer(), it) }
     } catch (_: Exception) {
@@ -55,5 +80,7 @@ class RemoteSettings(private val settings: Settings) {
 
     private companion object {
         const val KEY = "touchpad"
+        const val KEY_HISTORY = "clipHistory"
+        const val MAX_HISTORY = 20
     }
 }

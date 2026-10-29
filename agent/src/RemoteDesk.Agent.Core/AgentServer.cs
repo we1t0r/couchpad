@@ -12,17 +12,28 @@ using Microsoft.Extensions.Logging;
 
 namespace RemoteDesk.Agent.Core;
 
-/// <summary>WebSocket-сервер агента поверх TLS: wss://ip:port/ws.</summary>
+/// <summary>Что агент умеет делать по просьбе телефона. В тестах всё подменяется записью.</summary>
+/// <param name="Recycle">Удалить в корзину (в тестах — просто удалить).</param>
+public sealed record AgentServices(
+    IInputSink Input,
+    PowerScheduler Power,
+    IWakeOnLanSetup Wol,
+    FileService Files,
+    IClipboard Clipboard,
+    Action<string> Recycle);
+
+/// <summary>Сервер агента поверх TLS: wss://ip:port/ws для управления и https://ip:port/api/… для файлов.</summary>
 public sealed class AgentServer(
     AgentIdentity identity,
     PairingStore devices,
     PairingSecrets secrets,
     Func<AgentInfo> info,
-    IInputSink input,
-    PowerScheduler power,
-    IWakeOnLanSetup wol)
+    AgentServices services)
     : IAsyncDisposable
 {
+    readonly IInputSink input = services.Input;
+    readonly PowerScheduler power = services.Power;
+    readonly IWakeOnLanSetup wol = services.Wol;
     WebApplication? app;
     readonly ConcurrentDictionary<Session, byte> sessions = new();
     bool subscribed;
@@ -42,6 +53,7 @@ public sealed class AgentServer(
     internal IInputSink Input => input;
     internal PowerScheduler Power => power;
     internal IWakeOnLanSetup Wol => wol;
+    internal AgentServices Services => services;
 
     /// <summary>Телефон попросил открыть на ПК мастер включения по сети.</summary>
     public event Action? WolSetupRequested;
@@ -92,6 +104,7 @@ public sealed class AgentServer(
         app = builder.Build();
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
         app.Map("/ws", HandleAsync);
+        app.Map("/api/files/{**op}", ctx => FileApi.HandleAsync(this, ctx));
         await app.StartAsync(ct);
 
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
@@ -218,6 +231,23 @@ internal sealed class Session(AgentServer server, WebSocket ws)
                     break;
                 }
                 await PowerAsync(msg);
+                break;
+            case "clip_get":
+            case "clip_set":
+                if (!permissions.Contains("clipboard"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Буфер обмена выключен на компьютере"));
+                    break;
+                }
+                if (type == "clip_get")
+                {
+                    await SendAsync(Message.Build("clip", ("text", await server.Services.Clipboard.GetTextAsync() ?? "")));
+                }
+                else
+                {
+                    await server.Services.Clipboard.SetTextAsync(msg.Str("text") ?? "");
+                    await SendAsync(Message.Build("clip_done"));
+                }
                 break;
             case "wol_check":
             case "wol_setup":

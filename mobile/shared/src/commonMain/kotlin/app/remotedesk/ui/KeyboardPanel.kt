@@ -34,8 +34,18 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import app.remotedesk.core.RemoteInput
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.TextButton
+import app.remotedesk.core.AgentConnection
 import app.remotedesk.core.TextRelay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import app.remotedesk.core.TouchpadSettings
 import app.remotedesk.resources.*
 import org.jetbrains.compose.resources.StringResource
@@ -72,8 +82,52 @@ private val modifierKeys = listOf("ctrl", "alt", "shift", "win")
 /** Клавиатура: ввод текста, спецклавиши, залипающие модификаторы, сочетания и медиа. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun KeyboardPanel(input: RemoteInput, settings: TouchpadSettings, modifier: Modifier = Modifier) {
+fun KeyboardPanel(
+    connection: AgentConnection,
+    settings: TouchpadSettings,
+    clipHistory: List<String>,
+    addClip: (String) -> Unit,
+    notify: suspend (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val input = connection.input
     val relay = remember(input) { TextRelay(input) }
+    val scope = rememberCoroutineScope()
+    @Suppress("DEPRECATION")
+    val phoneClipboard = LocalClipboardManager.current
+
+    fun fromPc() = scope.launch {
+        try {
+            val text = connection.clipboardGet()
+            if (text.isEmpty()) {
+                notify(getString(Res.string.clip_pc_empty))
+            } else {
+                phoneClipboard.setText(AnnotatedString(text))
+                addClip(text)
+                notify(getString(Res.string.clip_got))
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            notify(getString(Res.string.clip_failed))
+        }
+    }
+
+    fun toPc(text: String?) = scope.launch {
+        if (text.isNullOrEmpty()) {
+            notify(getString(Res.string.clip_phone_empty))
+            return@launch
+        }
+        try {
+            connection.clipboardSet(text)
+            addClip(text)
+            notify(getString(Res.string.clip_sent))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            notify(getString(Res.string.clip_failed))
+        }
+    }
     var text by remember { mutableStateOf("") }
     // Залипающие модификаторы: нажали Ctrl — следующая клавиша уйдёт вместе с ним.
     var latched by remember { mutableStateOf(emptySet<String>()) }
@@ -123,6 +177,33 @@ fun KeyboardPanel(input: RemoteInput, settings: TouchpadSettings, modifier: Modi
             },
         )
         Text(stringResource(Res.string.kb_field_explain), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        Section(Res.string.kb_clipboard) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { fromPc() }, modifier = Modifier.weight(1f)) { Text("⬇  " + stringResource(Res.string.clip_from_pc)) }
+                FilledTonalButton(onClick = { toPc(phoneClipboard.getText()?.text) }, modifier = Modifier.weight(1f)) {
+                    Text("⬆  " + stringResource(Res.string.clip_to_pc))
+                }
+            }
+            if (clipHistory.isNotEmpty()) {
+                Text(stringResource(Res.string.clip_history), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                clipHistory.forEach { item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            item.replace('\n', ' '),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).clickable {
+                                phoneClipboard.setText(AnnotatedString(item))
+                                scope.launch { notify(getString(Res.string.clip_copied)) }
+                            }.padding(vertical = 6.dp),
+                        )
+                        TextButton(onClick = { toPc(item) }) { Text("⬆") }
+                    }
+                }
+            }
+        }
 
         Section(Res.string.kb_modifiers) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

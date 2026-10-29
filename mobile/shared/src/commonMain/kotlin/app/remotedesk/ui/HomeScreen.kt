@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -81,6 +82,7 @@ fun HomeScreen(
     onScan: () -> Unit,
     onPaste: () -> Unit,
     onOpenSettings: () -> Unit,
+    bottom: @Composable () -> Unit = {},
 ) {
     val onlineIds = found.map { it.id }.toSet()
     val newOnes = found.filter { f -> pcs.none { it.id == f.id } }
@@ -97,6 +99,7 @@ fun HomeScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = { Column(Modifier.navigationBarsPadding()) { bottom() } },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onScan,

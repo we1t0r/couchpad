@@ -1,6 +1,8 @@
 <resources>
     <string name="scan_prompt">Наведите камеру на QR-код на экране компьютера</string>
 
+    <string name="no_app_to_open">На телефоне нет программы, которая открывает такой файл. Он лежит в «Загрузки/RemoteDesk».</string>
+
     <string name="tile_monitors_off">Мониторы выкл</string>
     <string name="tile_monitors_on">Мониторы вкл</string>
     <string name="tile_lock">Заблокировать ПК</string>

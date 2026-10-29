@@ -32,9 +32,19 @@ public sealed class NullInput : IInputSink
 /// для тестов и режима разработки (<c>--input-log файл</c>), чтобы автотест не дёргал курсор
 /// и тем более не выключал ПК разработчика.
 /// </summary>
-public sealed class RecordingInput(string? logFile = null) : IInputSink, IPowerSink
+public sealed class RecordingInput(string? logFile = null) : IInputSink, IPowerSink, IClipboard
 {
     readonly List<string> lines = [];
+    string clipboard = "";
+
+    public Task<string?> GetTextAsync() => Task.FromResult<string?>(clipboard);
+
+    public Task SetTextAsync(string text)
+    {
+        clipboard = text;
+        Add($"clip {text}");
+        return Task.CompletedTask;
+    }
 
     public IReadOnlyList<string> Lines
     {

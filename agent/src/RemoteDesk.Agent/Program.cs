@@ -78,6 +78,7 @@ static class Program
                     break;
             }
         }
-        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input);
+        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input,
+            Clipboard: input as IClipboard ?? new WinFormsClipboard());
     }
 }

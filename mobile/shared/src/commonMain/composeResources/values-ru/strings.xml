@@ -200,4 +200,46 @@
     <string name="wol_how_to_test">Как проверить: выключите компьютер (Пуск → Завершение работы), подождите 10 секунд и нажмите «Включить» на главном экране. Телефон должен быть в той же сети Wi-Fi. Из интернета выключенный компьютер не включить — только из дома.</string>
     <string name="wol_open_wizard">Открыть мастер на ПК</string>
     <string name="wol_recheck">Проверить снова</string>
+
+    <string name="tab_files">Файлы</string>
+    <string name="files_title">Папки компьютера</string>
+    <string name="files_roots_hint">Здесь только папки, которые открыты телефону. Добавить другие или разрешить запись можно на ПК: значок RemoteDesk → «Папки для телефона…».</string>
+    <string name="files_rw">можно записывать</string>
+    <string name="files_ro">только просмотр и скачивание</string>
+    <string name="files_read_only">Эта папка только для чтения: файлы можно скачивать, но не загружать и не удалять.</string>
+    <string name="files_search">Поиск в папке</string>
+    <string name="files_upload">Загрузить сюда</string>
+    <string name="files_new_folder">Новая папка</string>
+    <string name="files_empty">Пусто</string>
+    <string name="files_download">Скачать на телефон</string>
+    <string name="files_open_pc">Открыть на компьютере</string>
+    <string name="files_opened">«%1$s» открыт на компьютере</string>
+    <string name="files_rename">Переименовать</string>
+    <string name="files_delete">Удалить</string>
+    <string name="files_delete_title">Удалить «%1$s»?</string>
+    <string name="files_delete_text">Файл попадёт в корзину Windows — его можно будет восстановить на компьютере.</string>
+    <string name="files_unreachable">Компьютер не отвечает. Проверьте связь и нажмите «Обновить».</string>
+    <string name="files_transfers">Передачи</string>
+    <string name="files_clear">Убрать готовые</string>
+    <string name="files_done">готово</string>
+    <string name="files_failed">ошибка</string>
+    <string name="files_open">Открыть</string>
+    <string name="files_keep_both">Сохранить обе</string>
+    <string name="files_replace">Заменить</string>
+
+    <string name="kb_clipboard">Буфер обмена</string>
+    <string name="clip_from_pc">Взять с ПК</string>
+    <string name="clip_to_pc">Отправить на ПК</string>
+    <string name="clip_history">Недавние — нажмите, чтобы скопировать на телефон; ⬆ — отправить на ПК</string>
+    <string name="clip_got">Текст с компьютера скопирован на телефон</string>
+    <string name="clip_sent">Текст отправлен в буфер обмена компьютера</string>
+    <string name="clip_copied">Скопировано на телефон</string>
+    <string name="clip_pc_empty">В буфере обмена компьютера нет текста</string>
+    <string name="clip_phone_empty">В буфере обмена телефона нет текста — сначала скопируйте что-нибудь</string>
+    <string name="clip_failed">Компьютер не ответил — попробуйте ещё раз</string>
+
+    <string name="share_title">Отправить на компьютер?</string>
+    <string name="share_text">Файлов: %1$s → «%2$s». Они сохранятся в папку «Загрузки» на компьютере; если имя занято — рядом, с номером.</string>
+    <string name="share_no_pc">Сначала подключите компьютер: откройте RemoteDesk и отсканируйте QR-код.</string>
+    <string name="share_send">Отправить</string>
 </resources>

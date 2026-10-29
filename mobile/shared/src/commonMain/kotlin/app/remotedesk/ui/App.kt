@@ -31,7 +31,16 @@ import app.remotedesk.core.PcDiscovery
 import app.remotedesk.core.PcStore
 import app.remotedesk.core.RemoteSettings
 import app.remotedesk.core.AgentConnection
+import app.remotedesk.core.AgentFiles
+import app.remotedesk.core.Conflict
+import app.remotedesk.core.LocalFile
+import app.remotedesk.core.PhoneStorage
+import app.remotedesk.core.Transfers
 import app.remotedesk.core.SavedPc
+import app.remotedesk.resources.share_no_pc
+import app.remotedesk.resources.share_send
+import app.remotedesk.resources.share_text
+import app.remotedesk.resources.share_title
 import app.remotedesk.core.WakeOnLan
 import app.remotedesk.resources.wake_done
 import app.remotedesk.resources.wake_no_network
@@ -69,11 +78,18 @@ fun App(
     discovery: PcDiscovery,
     device: DeviceInfo,
     scanQr: (onResult: (String?) -> Unit) -> Unit,
+    storage: PhoneStorage,
     incomingLinks: MutableStateFlow<String?> = remember { MutableStateFlow(null) },
+    /** Файлы, присланные в приложение кнопкой «Поделиться» других приложений. */
+    incomingShares: MutableStateFlow<List<LocalFile>?> = remember { MutableStateFlow(null) },
 ) {
     RemoteDeskTheme {
         val scope = rememberCoroutineScope()
         val controller = remember { ConnectionController(store, device, scope) }
+        val transfers = remember { Transfers(scope, storage) }
+        val clipHistory by remoteSettings.clipHistory.collectAsState()
+        val shares by incomingShares.collectAsState()
+        val extras = RemoteExtras(device.id, transfers, storage, clipHistory, remoteSettings::addClip)
         val pcs by store.pcs.collectAsState()
         val found by discovery.found.collectAsState()
         val link by controller.state.collectAsState()
@@ -149,11 +165,13 @@ fun App(
                 onScan = scan,
                 onPaste = { pasting = true },
                 onOpenSettings = { showSettings = true },
+                bottom = { TransfersList(transfers, storage) },
             )
             else -> PcScreen(
                 settings = touchpad,
                 onChangeSettings = remoteSettings::update,
                 onOpenSettings = { showSettings = true },
+                extras = extras,
                 state = state,
                 pc = when (state) {
                     is LinkState.Connecting -> state.pcId
@@ -186,6 +204,31 @@ fun App(
                     }) { Text(stringResource(Res.string.action_connect)) }
                 },
                 dismissButton = { TextButton(onClick = { confirmLink = null }) { Text(stringResource(Res.string.action_cancel)) } },
+            )
+        }
+
+        // «Поделиться → RemoteDesk»: отправить на последний компьютер в его папку для входящих.
+        shares?.let { files ->
+            val target = store.lastUsed()
+            AlertDialog(
+                onDismissRequest = { incomingShares.value = null },
+                title = { Text(stringResource(Res.string.share_title)) },
+                text = {
+                    Text(
+                        if (target == null) stringResource(Res.string.share_no_pc)
+                        else stringResource(Res.string.share_text, files.size.toString(), target.name),
+                    )
+                },
+                confirmButton = {
+                    if (target != null) {
+                        TextButton(onClick = {
+                            incomingShares.value = null
+                            val agentFiles = AgentFiles(target, device.id)
+                            files.forEach { transfers.upload(agentFiles, AgentFiles.INBOX, "", it, Conflict.Rename) }
+                        }) { Text(stringResource(Res.string.share_send)) }
+                    }
+                },
+                dismissButton = { TextButton(onClick = { incomingShares.value = null }) { Text(stringResource(Res.string.action_cancel)) } },
             )
         }
 

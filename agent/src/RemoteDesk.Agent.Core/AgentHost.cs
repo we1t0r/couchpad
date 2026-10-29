@@ -11,7 +11,8 @@ public sealed record AgentOptions(
     bool Loopback = false,
     IInputSink? Input = null,
     IPowerSink? Power = null,
-    IWakeOnLanSetup? Wol = null)
+    IWakeOnLanSetup? Wol = null,
+    IClipboard? Clipboard = null)
 {
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
@@ -32,12 +33,26 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     /// <summary>Проверка и настройка включения по сети.</summary>
     public IWakeOnLanSetup Wol { get; } = options.Wol ?? (OperatingSystem.IsWindows() ? new WindowsWakeOnLan() : new NullWakeOnLan());
     public PowerScheduler Power => power ??= new PowerScheduler(powerSink);
+
+    /// <summary>Какие папки ПК видит телефон.</summary>
+    public ShareStore Shares { get; } = new(options.DataDir);
+    FileService? files;
+    public FileService Files => files ??= new FileService(Shares);
     MdnsAdvertiser? mdns;
 
     public async Task StartAsync(CancellationToken ct = default)
     {
         var input = options.Input ?? (OperatingSystem.IsWindows() ? new WindowsInput() : new NullInput());
-        Server = new AgentServer(Identity, Devices, Secrets, Info, input, Power, Wol);
+        // Корзина есть только в настоящей Windows; при записи ввода в файл (тесты) удаляем насовсем внутри тестовой папки.
+        Action<string> recycle = OperatingSystem.IsWindows() && options.Input is not RecordingInput
+            ? RecycleBin.Send
+            : path =>
+            {
+                if (Directory.Exists(path)) Directory.Delete(path, true);
+                else File.Delete(path);
+            };
+        var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle);
+        Server = new AgentServer(Identity, Devices, Secrets, Info, services);
         await Server.StartAsync(options.Port, options.Loopback, ct);
         if (options.Mdns)
             mdns = new MdnsAdvertiser(Identity, Server.Port, NetworkInfo.Addresses());

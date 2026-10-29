@@ -12,6 +12,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import app.remotedesk.core.TouchpadSettings
 import app.remotedesk.core.AgentConnection
+import app.remotedesk.core.AgentFiles
+import app.remotedesk.core.PhoneStorage
+import app.remotedesk.core.Transfers
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,6 +77,7 @@ fun PcScreen(
     settings: TouchpadSettings,
     onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     onOpenSettings: () -> Unit,
+    extras: RemoteExtras,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val title = pc?.name ?: when (state) {
@@ -130,7 +135,7 @@ fun PcScreen(
         },
     ) { padding ->
         if (state is LinkState.Connected) {
-            RemoteControl(state, pc, settings, onChangeSettings, snackbar, Modifier.fillMaxSize().padding(padding))
+            RemoteControl(state, pc, settings, onChangeSettings, snackbar, extras, Modifier.fillMaxSize().padding(padding))
         } else {
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -161,14 +166,24 @@ fun PcScreen(
     }
 }
 
+/** Всё, что пульту нужно кроме соединения: файлы, передачи, буфер обмена. */
+class RemoteExtras(
+    val deviceId: String,
+    val transfers: Transfers,
+    val storage: PhoneStorage,
+    val clipHistory: List<String>,
+    val addClip: (String) -> Unit,
+)
+
 private enum class Tab(val label: StringResource, val icon: String) {
     Touchpad(Res.string.tab_touchpad, "🖱"),
     Keyboard(Res.string.tab_keyboard, "⌨"),
+    Files(Res.string.tab_files, "📁"),
     Power(Res.string.tab_power, "⏻"),
     Info(Res.string.tab_info, "ℹ"),
 }
 
-/** Пульт: тачпад, клавиатура и сведения о ПК — вкладками внизу. */
+/** Пульт: тачпад, клавиатура, файлы, питание и сведения о ПК — вкладками внизу. */
 @Composable
 private fun RemoteControl(
     state: LinkState.Connected,
@@ -176,6 +191,7 @@ private fun RemoteControl(
     settings: TouchpadSettings,
     onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     snackbar: SnackbarHostState,
+    extras: RemoteExtras,
     modifier: Modifier,
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Touchpad) }
@@ -185,12 +201,19 @@ private fun RemoteControl(
     LaunchedEffect(state.connection) {
         state.connection.notices.collect { snackbar.showSnackbar(it) }
     }
+    // Файлы — по HTTPS на тот адрес, по которому сейчас есть связь.
+    val files = remember(state.connection, pc) {
+        pc?.let { AgentFiles(it.copy(hosts = (listOf(state.connection.host) + it.hosts).distinct()), extras.deviceId) }
+    }
+    DisposableEffect(files) { onDispose { files?.close() } }
+    val notify: suspend (String) -> Unit = { snackbar.showSnackbar(it) }
 
     Column(modifier) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
-                Tab.Keyboard -> KeyboardPanel(input, settings, Modifier.fillMaxSize())
+                Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize())
+                Tab.Files -> if (files != null) FilesPanel(files, extras.transfers, extras.storage, notify, Modifier.fillMaxSize())
                 Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())
                 Tab.Info -> Column(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),

@@ -24,6 +24,7 @@ class AgentInteropTest {
     private val dataDir = Files.createTempDirectory("rdesk-interop").toFile()
     private val device = DeviceInfo("interop-phone", "Тест JVM", "jvm")
     private val inputLog = File(dataDir, "input.log")
+    private val shared = File(dataDir, "shared")
     private var agent: Process? = null
 
     private val available get() = exe.isFile && System.getProperty("os.name").startsWith("Windows")
@@ -32,6 +33,14 @@ class AgentInteropTest {
     fun startAgent() {
         if (!available) return
         val linkFile = File(dataDir, "link.txt")
+        // Агенту открываем только временную папку теста, а не настоящие «Документы».
+        val agentDir = File(dataDir, "agent").apply { mkdirs() }
+        shared.mkdirs()
+        File(shared, "hello.txt").writeText("Привет с ПК")
+        val json = shared.path.replace("\\", "\\\\")
+        File(agentDir, "shares.json").writeText(
+            """{"folders":[{"id":"t","name":"Тест","path":"$json","writable":true}],"wholeComputer":false,"wholeComputerWritable":false,"inbox":"$json"}""",
+        )
         // --input-log: агент записывает ввод в файл и не трогает настоящие мышь и клавиатуру.
         agent = ProcessBuilder(
             exe.path, "--loopback", "--port", PORT.toString(),
@@ -109,6 +118,7 @@ class AgentInteropTest {
                     "key 0x11 down", "key 0x43 down", "key 0x43 up", "key 0x11 up",
                     "text Привет\b😀", "key 0x10 down", "power monitors_off keep", "key 0x10 up",
                 )
+                // Буфер обмена в тесте тоже записывается в журнал, а не в настоящий буфер ПК.
                 var lines = emptyList<String>()
                 for (attempt in 1..50) {
                     lines = if (inputLog.isFile) inputLog.readText().split("\n").filter { it.isNotEmpty() } else emptyList()
@@ -124,6 +134,35 @@ class AgentInteropTest {
                     AgentConnection.connect(paired.pc.copy(fingerprint = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), device)
                 }
                 assertEquals(Problem.WrongPc, wrongPc.problem)
+
+                // Файлы по HTTPS с тем же закреплённым сертификатом.
+                val files = AgentFiles(paired.pc, device.id)
+                try {
+                    assertEquals(listOf("t"), files.roots().map { it.id })
+                    assertEquals(listOf("hello.txt"), files.list("t", "").map { it.name })
+                    val downloaded = java.io.ByteArrayOutputStream()
+                    files.download("t", "hello.txt", 0) { b, n -> downloaded.write(b, 0, n) }
+                    assertEquals("Привет с ПК", downloaded.toString(Charsets.UTF_8))
+
+                    val data = "данные с телефона".encodeToByteArray()
+                    val (name, have) = files.beginUpload("t", "", "hello.txt", Conflict.Rename)
+                    assertEquals("hello (2).txt", name)
+                    var pos = 0
+                    files.upload("t", "", name, data.size.toLong(), have, { buf ->
+                        if (pos >= data.size) -1 else data.copyInto(buf, 0, pos).let { val n = data.size - pos; pos = data.size; n }
+                    }) {}
+                    assertEquals("данные с телефона", File(shared, name).readText())
+
+                    val err = assertFailsWith<FileError> { files.download("t", "../link.txt", 0) { _, _ -> } }
+                    assertEquals("outside", err.code)
+                } finally {
+                    files.close()
+                }
+
+                val clip = AgentConnection.connect(paired.pc, device)
+                clip.clipboardSet("из теста")
+                assertEquals("из теста", clip.clipboardGet())
+                clip.close()
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }
                 assertEquals(Problem.Unreachable, nobody.problem)

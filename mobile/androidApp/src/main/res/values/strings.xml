@@ -2,6 +2,8 @@
     <string name="app_name" translatable="false">RemoteDesk</string>
     <string name="scan_prompt">Point the camera at the QR code on the computer screen</string>
 
+    <string name="no_app_to_open">No app on the phone can open this file. It is in Downloads/RemoteDesk.</string>
+
     <string name="tile_monitors_off">Monitors off</string>
     <string name="tile_monitors_on">Monitors on</string>
     <string name="tile_lock">Lock PC</string>

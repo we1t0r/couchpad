@@ -10,11 +10,23 @@ public sealed class ServerTests : IAsyncLifetime
 {
     readonly string dir = Path.Combine(Path.GetTempPath(), "rdesk-test-" + Guid.NewGuid().ToString("N"));
     readonly RecordingInput input = new();
+    readonly FakeWol wol = new();
     AgentHost host = null!;
+
+    AgentOptions Options() => new(dir, Port: 0, Mdns: false, Loopback: true, Input: input, Wol: wol);
+
+    sealed class FakeWol : IWakeOnLanSetup
+    {
+        public WolReport Check() => new(
+            [new WolCheck("cable", WolState.Ok, "Кабель", null), new WolCheck("magic", WolState.Problem, "Пакет", "Исправить")],
+            CanFix: true);
+
+        public Task<bool> FixAsync() => Task.FromResult(true);
+    }
 
     public async Task InitializeAsync()
     {
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true, Input: input));
+        host = new AgentHost(Options());
         await host.StartAsync();
     }
 
@@ -224,6 +236,37 @@ public sealed class ServerTests : IAsyncLifetime
         Assert.Equal(["power lock"], input.Lines);
     }
 
+    [Fact]
+    public async Task Wol_check_reports_state_and_setup_opens_wizard()
+    {
+        var token = await PairAsync();
+        using var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(ws);
+        var opened = 0;
+        host.Server.WolSetupRequested += () => opened++;
+
+        await SendAsync(ws, Message.Build("wol_check"));
+        var status = await ReceiveAsync(ws);
+        Assert.Equal("wol_status", status.Str("t"));
+        Assert.Equal(false, status.Bool("ready"));
+        Assert.Equal(true, status.Bool("canFix"));
+        var checks = status["checks"]!.AsArray();
+        Assert.Equal("problem", checks[1]!["state"]!.GetValue<string>());
+        Assert.Null(checks[0]!["hint"]);
+        Assert.Equal(0, opened);
+
+        await SendAsync(ws, Message.Build("wol_setup"));
+        Assert.Equal("wol_status", (await ReceiveAsync(ws)).Str("t"));
+        Assert.Equal(1, opened);
+    }
+
+    [Theory]
+    [InlineData("192.168.0.102", "255.255.255.0", "192.168.0.255")]
+    [InlineData("10.1.2.3", "255.255.0.0", "10.1.255.255")]
+    public void Subnet_broadcast(string ip, string mask, string expected) =>
+        Assert.Equal(expected, NetworkInfo.Broadcast(System.Net.IPAddress.Parse(ip), System.Net.IPAddress.Parse(mask)));
+
     static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 100 && !condition(); i++)
@@ -252,7 +295,7 @@ public sealed class ServerTests : IAsyncLifetime
         var fp = host.Identity.Fingerprint;
         await host.DisposeAsync();
 
-        host = new AgentHost(new AgentOptions(dir, Port: 0, Mdns: false, Loopback: true, Input: input));
+        host = new AgentHost(Options());
         await host.StartAsync();
 
         Assert.Equal(id, host.Identity.Id);

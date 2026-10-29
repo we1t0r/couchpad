@@ -19,8 +19,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import app.remotedesk.core.WakeOnLan
+import app.remotedesk.resources.home_wake
+import app.remotedesk.resources.home_waking
 import app.remotedesk.resources.settings_title
+import kotlinx.coroutines.delay
+import kotlin.time.TimeMark
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -63,6 +75,8 @@ fun HomeScreen(
     found: List<FoundPc>,
     snackbar: SnackbarHostState,
     onOpen: (SavedPc) -> Unit,
+    waking: Map<String, TimeMark>,
+    onWake: (SavedPc) -> Unit,
     onFound: (FoundPc) -> Unit,
     onScan: () -> Unit,
     onPaste: () -> Unit,
@@ -106,20 +120,29 @@ fun HomeScreen(
             } else {
                 item { SectionTitle(stringResource(Res.string.home_saved)) }
                 items(pcs, key = { it.id }) { pc ->
+                    val online = pc.id in onlineIds
+                    val wakingSince = waking[pc.id]
                     PcCard(
                         name = pc.name,
                         subtitle = when {
                             pc.revoked -> stringResource(Res.string.pc_revoked)
-                            pc.id in onlineIds -> stringResource(Res.string.pc_online)
+                            wakingSince != null -> stringResource(Res.string.home_waking, elapsed(wakingSince))
+                            online -> stringResource(Res.string.pc_online)
                             else -> pc.hosts.firstOrNull().orEmpty()
                         },
                         dot = when {
                             pc.revoked -> MaterialTheme.colorScheme.error
-                            pc.id in onlineIds -> Green
+                            online -> Green
                             else -> MaterialTheme.colorScheme.outlineVariant
                         },
                         onClick = { onOpen(pc) },
-                    )
+                    ) {
+                        when {
+                            wakingSince != null -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                            !online && !pc.revoked && WakeOnLan.canWake(pc) ->
+                                FilledTonalButton(onClick = { onWake(pc) }) { Text("⏻  " + stringResource(Res.string.home_wake)) }
+                        }
+                    }
                 }
             }
             if (newOnes.isNotEmpty()) {
@@ -162,21 +185,35 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun PcCard(name: String, subtitle: String, dot: Color, onClick: () -> Unit) {
+private fun PcCard(name: String, subtitle: String, dot: Color, onClick: () -> Unit, trailing: @Composable () -> Unit = {}) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        PcRow(name, subtitle, dot)
+        PcRow(name, subtitle, dot, trailing)
     }
 }
 
 @Composable
-private fun PcRow(name: String, subtitle: String, dot: Color) {
+private fun PcRow(name: String, subtitle: String, dot: Color, trailing: @Composable () -> Unit = {}) {
     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(12.dp).background(dot, CircleShape))
         Spacer(Modifier.width(14.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(2.dp))
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        trailing()
     }
+}
+
+/** «0:23» — сколько прошло, обновляется раз в секунду. */
+@Composable
+private fun elapsed(since: TimeMark): String {
+    var seconds by remember(since) { mutableStateOf(since.elapsedNow().inWholeSeconds) }
+    LaunchedEffect(since) {
+        while (true) {
+            delay(1_000)
+            seconds = since.elapsedNow().inWholeSeconds
+        }
+    }
+    return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
 }

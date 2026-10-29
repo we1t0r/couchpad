@@ -5,9 +5,14 @@
     <string name="tile_monitors_off">Monitors off</string>
     <string name="tile_monitors_on">Monitors on</string>
     <string name="tile_lock">Lock PC</string>
+    <string name="tile_wake">Turn on PC</string>
+    <string name="widget_wake">Turn on</string>
+    <string name="qa_wake_sent">Turn-on signal sent to “%1$s”. If it is set up, the computer starts in a few seconds.</string>
+    <string name="qa_wake_no_mac">“%1$s”: network card address unknown. Connect to the computer in the app once.</string>
+    <string name="qa_wake_no_network">Couldn’t send the signal: the phone is offline. Turn on Wi-Fi — the same network as the computer.</string>
 
     <string name="widget_label" translatable="false">RemoteDesk</string>
-    <string name="widget_description">Turn the computer’s monitors off and on, lock it — without opening the app</string>
+    <string name="widget_description">Turn the computer on, its monitors off and on, lock it — without opening the app</string>
     <string name="widget_monitors_off">Monitors off</string>
     <string name="widget_monitors_on">On</string>
     <string name="widget_lock">Lock</string>

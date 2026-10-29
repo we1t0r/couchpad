@@ -10,6 +10,7 @@ import app.remotedesk.core.PcStore
 import app.remotedesk.core.PowerAction
 import app.remotedesk.core.Problem
 import app.remotedesk.core.RemoteSettings
+import app.remotedesk.core.WakeOnLan
 import com.russhwolf.settings.SharedPreferencesSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,9 +72,18 @@ object QuickActions {
         }
     }
 
-    suspend fun runAndToast(context: Context, action: PowerAction) {
-        val text = run(context, action)
-        withContext(Dispatchers.Main) { Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
+    /** Включить последний компьютер по сети. Ждать загрузки не будем: процесс в фоне долго не живёт. */
+    suspend fun wake(context: Context): String {
+        val pc = PcStore(context.settingsStorage()).lastUsed() ?: return context.getString(R.string.qa_no_pc)
+        if (!WakeOnLan.canWake(pc)) return context.getString(R.string.qa_wake_no_mac, pc.name)
+        return if (WakeOnLan.wake(pc) > 0) context.getString(R.string.qa_wake_sent, pc.name)
+        else context.getString(R.string.qa_wake_no_network)
+    }
+
+    /** [action] == null — включить ПК по сети. */
+    suspend fun runAndToast(context: Context, action: PowerAction?) {
+        val text = if (action == null) wake(context) else run(context, action)
+        withContext(Dispatchers.Main) { Toast.makeText(context, text, Toast.LENGTH_LONG).show() }
     }
 
     private fun shortProblem(problem: Problem) = when (problem) {

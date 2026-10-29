@@ -31,7 +31,14 @@ object Protocol {
 }
 
 @Serializable
-data class MacInfo(val mac: String, val name: String = "", val ip: String = "", val wired: Boolean = false)
+data class MacInfo(
+    val mac: String,
+    val name: String = "",
+    val ip: String = "",
+    val wired: Boolean = false,
+    /** Широковещательный адрес подсети ПК, например 192.168.0.255. */
+    val broadcast: String = "",
+)
 
 @Serializable
 data class AgentInfo(

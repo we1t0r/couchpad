@@ -187,4 +187,17 @@
     <string name="s_wake_title">Wake monitors only with the button</string>
     <string name="s_wake_sub">An accidental mouse movement won’t turn the monitors back on</string>
     <string name="s_wake_info">Normally, turned-off monitors wake up on any mouse movement — including bumping the mouse at night or sliding on the touchpad. With this setting only the “Turn on monitors” button in the app wakes them: if the mouse wakes them, the computer turns them off again half a second later (the screen briefly flashes). Any key on the computer keyboard always wakes them, so the computer stays usable without the phone. If the screen keeps waking up again and again (for example, the mouse jitters by itself), the mode turns off so the screen doesn’t keep flashing. Default: off.</string>
+
+    <string name="home_wake">Turn on</string>
+    <string name="home_waking">Turning on… %1$s</string>
+    <string name="wake_done">“%1$s” is on</string>
+    <string name="wake_timeout">“%1$s” didn’t answer within 2 minutes. If it never turned on, open “About PC” → “Wake-on-LAN” and check the settings.</string>
+    <string name="wake_no_network">Couldn’t send the signal: the phone is offline. Turn on Wi-Fi — the same network as the computer.</string>
+    <string name="wol_title">Wake-on-LAN</string>
+    <string name="wol_checking">Checking settings on the computer…</string>
+    <string name="wol_ready">Windows is ready: you can turn the computer on from the phone with the “Turn on” button on the home screen, the widget or the quick settings.</string>
+    <string name="wol_not_ready">Something needs to be set up — open the wizard on the computer, it fixes things itself.</string>
+    <string name="wol_how_to_test">How to test: shut the computer down (Start → Shut down), wait 10 seconds and tap “Turn on” on the home screen. The phone must be on the same Wi-Fi. A computer that is off can’t be turned on over the internet — only from home.</string>
+    <string name="wol_open_wizard">Open wizard on PC</string>
+    <string name="wol_recheck">Check again</string>
 </resources>

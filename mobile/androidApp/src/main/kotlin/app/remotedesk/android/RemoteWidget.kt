@@ -11,7 +11,7 @@ import app.remotedesk.core.PcStore
 import app.remotedesk.core.PowerAction
 import kotlinx.coroutines.launch
 
-/** Виджет на рабочий стол: «Выключить мониторы», «Включить мониторы», «Заблокировать». */
+/** Виджет на рабочий стол: «Включить ПК», «Выключить мониторы», «Включить мониторы», «Заблокировать». */
 class RemoteWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val views = views(context)
@@ -19,11 +19,13 @@ class RemoteWidget : AppWidgetProvider() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.getStringExtra(EXTRA_ACTION)?.let { name -> PowerAction.entries.firstOrNull { it.name == name } }
-        if (intent.action != ACTION_RUN || action == null) {
+        val name = intent.getStringExtra(EXTRA_ACTION)
+        if (intent.action != ACTION_RUN || name == null) {
             super.onReceive(context, intent)
             return
         }
+        // WAKE — включить по сети, иначе команда питания.
+        val action = PowerAction.entries.firstOrNull { it.name == name }
         // goAsync даёт широковещательному приёмнику до ~10 с на работу в фоне.
         val pending = goAsync()
         appScope.launch {
@@ -39,6 +41,7 @@ class RemoteWidget : AppWidgetProvider() {
     companion object {
         private const val ACTION_RUN = "app.remotedesk.widget.RUN"
         private const val EXTRA_ACTION = "action"
+        private const val WAKE = "WAKE"
 
         /** Обновить подпись (имя компьютера) на всех виджетах. */
         fun refresh(context: Context) {
@@ -55,16 +58,17 @@ class RemoteWidget : AppWidgetProvider() {
                 setOnClickPendingIntent(R.id.widget_monitors_off, run(context, PowerAction.MonitorsOff))
                 setOnClickPendingIntent(R.id.widget_monitors_on, run(context, PowerAction.MonitorsOn))
                 setOnClickPendingIntent(R.id.widget_lock, run(context, PowerAction.Lock))
+                setOnClickPendingIntent(R.id.widget_wake, run(context, null))
             }
         }
 
-        private fun run(context: Context, action: PowerAction): PendingIntent {
+        private fun run(context: Context, action: PowerAction?): PendingIntent {
             val intent = Intent(context, RemoteWidget::class.java)
                 .setAction(ACTION_RUN)
-                .putExtra(EXTRA_ACTION, action.name)
+                .putExtra(EXTRA_ACTION, action?.name ?: WAKE)
             return PendingIntent.getBroadcast(
                 context,
-                action.ordinal,
+                action?.ordinal ?: 99,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )

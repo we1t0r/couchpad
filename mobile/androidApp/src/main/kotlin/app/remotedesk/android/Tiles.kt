@@ -7,8 +7,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Плитка в шторке быстрых настроек: одно нажатие — одна команда на последний компьютер. */
-abstract class PowerTile(private val action: PowerAction) : TileService() {
+/**
+ * Плитка в шторке быстрых настроек: одно нажатие — одна команда на последний компьютер.
+ * [action] == null — включить компьютер по сети.
+ */
+abstract class PowerTile(private val action: PowerAction?) : TileService() {
     override fun onStartListening() {
         setActive(false)
     }
@@ -34,3 +37,5 @@ class MonitorsOffTile : PowerTile(PowerAction.MonitorsOff)
 class MonitorsOnTile : PowerTile(PowerAction.MonitorsOn)
 
 class LockTile : PowerTile(PowerAction.Lock)
+
+class WakeTile : PowerTile(null)

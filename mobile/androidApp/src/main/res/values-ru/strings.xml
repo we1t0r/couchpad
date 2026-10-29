@@ -4,8 +4,13 @@
     <string name="tile_monitors_off">Мониторы выкл</string>
     <string name="tile_monitors_on">Мониторы вкл</string>
     <string name="tile_lock">Заблокировать ПК</string>
+    <string name="tile_wake">Включить ПК</string>
+    <string name="widget_wake">Вкл ПК</string>
+    <string name="qa_wake_sent">Сигнал включения отправлен на «%1$s». Если всё настроено, компьютер запустится через несколько секунд.</string>
+    <string name="qa_wake_no_mac">«%1$s»: адрес сетевой карты неизвестен. Подключитесь к компьютеру в приложении хотя бы раз.</string>
+    <string name="qa_wake_no_network">Не удалось отправить сигнал: телефон не в сети. Включите Wi-Fi — тот же, что у компьютера.</string>
 
-    <string name="widget_description">Выключить и включить мониторы, заблокировать компьютер — не открывая приложение</string>
+    <string name="widget_description">Включить компьютер, погасить и включить мониторы, заблокировать — не открывая приложение</string>
     <string name="widget_monitors_off">Мониторы выкл</string>
     <string name="widget_monitors_on">Вкл</string>
     <string name="widget_lock">Блок</string>

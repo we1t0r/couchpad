@@ -97,6 +97,14 @@ class AgentConnection private constructor(
     /** Таймер питания на ПК (общий для всех телефонов). */
     val powerTimer: StateFlow<PowerTimer?> = _powerTimer.asStateFlow()
 
+    private val _wolStatus = MutableStateFlow<WolStatus?>(null)
+
+    /** Готов ли ПК к включению по сети (ответ на [checkWol]). */
+    val wolStatus: StateFlow<WolStatus?> = _wolStatus.asStateFlow()
+
+    /** Спросить агента о настройках включения по сети; [openWizard] — ещё и открыть мастер на экране ПК. */
+    fun checkWol(openWizard: Boolean = false) = enqueue(message(if (openWizard) "wol_setup" else "wol_check"))
+
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
@@ -130,6 +138,7 @@ class AgentConnection private constructor(
                 when (msg.type) {
                     "pong" -> msg.num("n")?.let { pongs.emit(it) }
                     "power_timer" -> _powerTimer.value = RemotePower.parseTimer(msg)
+                    "wol_status" -> _wolStatus.value = WolStatus.parse(msg)
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))
                         // Ошибка, после которой агент закрывает соединение, — запоминаем её как причину.

@@ -29,7 +29,8 @@ public static class Protocol
     }
 }
 
-public sealed record MacInfo(string Mac, string Name, string Ip, bool Wired);
+/// <param name="Broadcast">Широковещательный адрес подсети для пакета пробуждения (Wake-on-LAN).</param>
+public sealed record MacInfo(string Mac, string Name, string Ip, bool Wired, string? Broadcast = null);
 
 public sealed record AgentInfo(string Id, string Name, string Os, string Version, int Protocol, IReadOnlyList<MacInfo> Macs);
 

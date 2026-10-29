@@ -10,7 +10,8 @@ public sealed record AgentOptions(
     bool Mdns = true,
     bool Loopback = false,
     IInputSink? Input = null,
-    IPowerSink? Power = null)
+    IPowerSink? Power = null,
+    IWakeOnLanSetup? Wol = null)
 {
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
@@ -27,13 +28,16 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
         ?? options.Input as IPowerSink
         ?? (OperatingSystem.IsWindows() ? new WindowsPower() : new NullPower());
     PowerScheduler? power;
+
+    /// <summary>Проверка и настройка включения по сети.</summary>
+    public IWakeOnLanSetup Wol { get; } = options.Wol ?? (OperatingSystem.IsWindows() ? new WindowsWakeOnLan() : new NullWakeOnLan());
     public PowerScheduler Power => power ??= new PowerScheduler(powerSink);
     MdnsAdvertiser? mdns;
 
     public async Task StartAsync(CancellationToken ct = default)
     {
         var input = options.Input ?? (OperatingSystem.IsWindows() ? new WindowsInput() : new NullInput());
-        Server = new AgentServer(Identity, Devices, Secrets, Info, input, Power);
+        Server = new AgentServer(Identity, Devices, Secrets, Info, input, Power, Wol);
         await Server.StartAsync(options.Port, options.Loopback, ct);
         if (options.Mdns)
             mdns = new MdnsAdvertiser(Identity, Server.Port, NetworkInfo.Addresses());

@@ -11,6 +11,7 @@ sealed class TrayContext : ApplicationContext
     PairForm? pairForm;
     DevicesForm? devicesForm;
     PowerWarningForm? warningForm;
+    WolForm? wolForm;
     readonly ToolStripMenuItem cancelTimerItem;
 
     public TrayContext(AgentHost host, bool showPairing)
@@ -20,6 +21,7 @@ sealed class TrayContext : ApplicationContext
         var menu = new ContextMenuStrip();
         menu.Items.Add("Подключить телефон…", null, (_, _) => ShowPairing());
         menu.Items.Add("Телефоны…", null, (_, _) => ShowDevices());
+        menu.Items.Add("Включение по сети…", null, (_, _) => ShowWol());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выход", null, (_, _) => ExitThread());
 
@@ -47,6 +49,7 @@ sealed class TrayContext : ApplicationContext
         menu.Items.Insert(0, cancelTimerItem);
         host.Power.Changed += timer => ui.Post(_ => OnTimerChanged(timer), null);
         host.Power.Warning += timer => ui.Post(_ => ShowWarning(timer), null);
+        host.Server.WolSetupRequested += () => ui.Post(_ => ShowWol(), null);
         host.Power.Failed += (action, error) => ui.Post(_ =>
             tray.ShowBalloonTip(6000, "Не получилось", error, ToolTipIcon.Warning), null);
 
@@ -100,6 +103,14 @@ sealed class TrayContext : ApplicationContext
         pairForm.Activate();
     }
 
+    void ShowWol()
+    {
+        if (wolForm is null || wolForm.IsDisposed)
+            wolForm = new WolForm(host.Wol);
+        wolForm.Show();
+        wolForm.Activate();
+    }
+
     void ShowDevices()
     {
         if (devicesForm is null || devicesForm.IsDisposed)
@@ -115,6 +126,7 @@ sealed class TrayContext : ApplicationContext
         pairForm?.Close();
         devicesForm?.Close();
         warningForm?.Close();
+        wolForm?.Close();
         base.ExitThreadCore();
     }
 }

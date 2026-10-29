@@ -30,6 +30,18 @@ import app.remotedesk.core.PairingLink
 import app.remotedesk.core.PcDiscovery
 import app.remotedesk.core.PcStore
 import app.remotedesk.core.RemoteSettings
+import app.remotedesk.core.AgentConnection
+import app.remotedesk.core.SavedPc
+import app.remotedesk.core.WakeOnLan
+import app.remotedesk.resources.wake_done
+import app.remotedesk.resources.wake_no_network
+import app.remotedesk.resources.wake_timeout
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import app.remotedesk.resources.Res
 import app.remotedesk.resources.action_cancel
 import app.remotedesk.resources.action_connect
@@ -91,6 +103,26 @@ fun App(
 
         val scan = { scanQr { accept(it, confirm = false) } }
 
+        // Включение по сети: какие ПК сейчас «включаются» и с какого момента.
+        var waking by remember { mutableStateOf(mapOf<String, TimeMark>()) }
+
+        fun wake(pc: SavedPc) {
+            if (pc.id in waking) return
+            waking = waking + (pc.id to TimeSource.Monotonic.markNow())
+            scope.launch {
+                val woke = try {
+                    if (WakeOnLan.wake(pc) == 0) {
+                        snackbar.showSnackbar(getString(Res.string.wake_no_network))
+                        return@launch
+                    }
+                    waitUntilAwake(pc, discovery, store, device)
+                } finally {
+                    waking = waking - pc.id
+                }
+                snackbar.showSnackbar(getString(if (woke) Res.string.wake_done else Res.string.wake_timeout, pc.name))
+            }
+        }
+
         LaunchedEffect(incoming) {
             incoming?.let {
                 incomingLinks.value = null
@@ -111,6 +143,8 @@ fun App(
                 found = found,
                 snackbar = snackbar,
                 onOpen = { controller.connect(it.id) },
+                waking = waking,
+                onWake = ::wake,
                 onFound = { foundHelp = it },
                 onScan = scan,
                 onPaste = { pasting = true },
@@ -197,6 +231,29 @@ fun App(
             )
         }
     }
+}
+
+/**
+ * Ждём, пока ПК загрузится: он появится в поиске по сети или ответит на подключение.
+ * Пакет пробуждения повторяем в начале — вдруг первый потерялся. Не дольше двух минут.
+ */
+private suspend fun waitUntilAwake(pc: SavedPc, discovery: PcDiscovery, store: PcStore, device: DeviceInfo): Boolean {
+    for (step in 1..40) {
+        delay(3_000)
+        if (step == 2 || step == 5) WakeOnLan.wake(pc)
+        if (discovery.found.value.any { it.id == pc.id }) return true
+        if (step % 3 == 0) {
+            try {
+                withTimeout(5_000) { AgentConnection.connect(store.get(pc.id) ?: pc, device).close() }
+                return true
+            } catch (e: CancellationException) {
+                if (e !is TimeoutCancellationException) throw e
+            } catch (_: Exception) {
+                // Ещё загружается.
+            }
+        }
+    }
+    return false
 }
 
 val Blue = Color(0xFF2563EB)

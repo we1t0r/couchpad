@@ -11,6 +11,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import app.remotedesk.core.TouchpadSettings
+import app.remotedesk.core.AgentConnection
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -260,11 +262,65 @@ private fun Connected(state: LinkState.Connected, pc: SavedPc?) {
         }
     }
 
+    WolCard(state.connection)
+
     Text(
         stringResource(Res.string.coming_soon),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/** «Включение по сети»: что проверил агент и кнопка открыть мастер на экране ПК. */
+@Composable
+private fun WolCard(connection: AgentConnection) {
+    val status by connection.wolStatus.collectAsState()
+    LaunchedEffect(connection) { connection.checkWol() }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(Res.string.wol_title), style = MaterialTheme.typography.titleMedium)
+            val s = status
+            if (s == null) {
+                Text(stringResource(Res.string.wol_checking), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Text(
+                    stringResource(if (s.ready) Res.string.wol_ready else Res.string.wol_not_ready),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                s.items.forEach { item ->
+                    Row {
+                        Text(
+                            when (item.state) {
+                                "ok" -> "✓"
+                                "warning" -> "!"
+                                "problem" -> "✗"
+                                else -> "?"
+                            },
+                            color = when (item.state) {
+                                "ok" -> Green
+                                "problem", "warning" -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.width(22.dp),
+                        )
+                        Column {
+                            Text(item.title, style = MaterialTheme.typography.bodyMedium)
+                            item.hint?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                Text(stringResource(Res.string.wol_how_to_test), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { connection.checkWol(openWizard = true) }) { Text(stringResource(Res.string.wol_open_wizard)) }
+                TextButton(onClick = { connection.checkWol() }) { Text(stringResource(Res.string.wol_recheck)) }
+            }
+        }
+    }
 }
 
 @Composable

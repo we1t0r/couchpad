@@ -32,7 +32,7 @@ public static class NetworkInfo
                 var ip = address.Address;
                 if (ip.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(ip) || IsLinkLocal(ip))
                     continue;
-                result.Add(new MacInfo(mac, nic.Name, ip.ToString(), wired));
+                result.Add(new MacInfo(mac, nic.Name, ip.ToString(), wired, Broadcast(ip, address.IPv4Mask)));
             }
         }
         // Проводные сначала: по кабелю связь надёжнее, и только через кабель обычно работает WoL.
@@ -42,6 +42,16 @@ public static class NetworkInfo
     public static IReadOnlyList<string> Addresses() => Interfaces().Select(i => i.Ip).Distinct().ToList();
 
     static bool IsLinkLocal(IPAddress ip) => ip.GetAddressBytes() is [169, 254, ..];
+
+    /// <summary>Широковещательный адрес подсети (192.168.0.255): туда телефон шлёт пакет пробуждения.</summary>
+    internal static string? Broadcast(IPAddress ip, IPAddress? mask)
+    {
+        if (mask is null || mask.Equals(IPAddress.Any))
+            return null;
+        var a = ip.GetAddressBytes();
+        var m = mask.GetAddressBytes();
+        return new IPAddress(a.Zip(m, (x, y) => (byte)(x | ~y)).ToArray()).ToString();
+    }
 
     static string FormatMac(PhysicalAddress address) =>
         string.Join(':', address.GetAddressBytes().Select(b => b.ToString("X2")));

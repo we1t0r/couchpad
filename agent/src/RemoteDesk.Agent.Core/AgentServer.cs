@@ -19,7 +19,8 @@ public sealed class AgentServer(
     PairingSecrets secrets,
     Func<AgentInfo> info,
     IInputSink input,
-    PowerScheduler power)
+    PowerScheduler power,
+    IWakeOnLanSetup wol)
     : IAsyncDisposable
 {
     WebApplication? app;
@@ -40,6 +41,24 @@ public sealed class AgentServer(
     internal AgentInfo Info() => info();
     internal IInputSink Input => input;
     internal PowerScheduler Power => power;
+    internal IWakeOnLanSetup Wol => wol;
+
+    /// <summary>Телефон попросил открыть на ПК мастер включения по сети.</summary>
+    public event Action? WolSetupRequested;
+
+    internal void RequestWolSetup() => WolSetupRequested?.Invoke();
+
+    internal static string WolMessage(WolReport report) => Message.Build(
+        "wol_status",
+        ("ready", report.Ready),
+        ("canFix", report.CanFix),
+        ("checks", report.Checks.Select(c => new
+        {
+            id = c.Id,
+            state = c.State.ToString().ToLowerInvariant(),
+            title = c.Title,
+            hint = c.Hint,
+        }).ToList()));
 
     /// <summary>Сообщение о таймере питания: {"t":"power_timer"} без полей — таймера нет.</summary>
     internal static string TimerMessage(PowerTimer? timer) => timer is null
@@ -199,6 +218,13 @@ internal sealed class Session(AgentServer server, WebSocket ws)
                     break;
                 }
                 await PowerAsync(msg);
+                break;
+            case "wol_check":
+            case "wol_setup":
+                if (type == "wol_setup")
+                    server.RequestWolSetup();
+                // Проверка запускает powercfg — не держим поток приёма.
+                await SendAsync(AgentServer.WolMessage(await Task.Run(server.Wol.Check)));
                 break;
             case var _ when InputHandler.Handles(type):
                 if (!permissions.Contains("input"))

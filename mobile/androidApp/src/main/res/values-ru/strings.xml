@@ -1,7 +1,7 @@
 <resources>
     <string name="scan_prompt">Наведите камеру на QR-код на экране компьютера</string>
 
-    <string name="no_app_to_open">На телефоне нет программы, которая открывает такой файл. Он лежит в «Загрузки/RemoteDesk».</string>
+    <string name="no_app_to_open">На телефоне нет программы, которая открывает такой файл. Он лежит в «Загрузки/Couchpad».</string>
 
     <string name="tile_monitors_off">Мониторы выкл</string>
     <string name="tile_monitors_on">Мониторы вкл</string>
@@ -17,8 +17,8 @@
     <string name="widget_monitors_on">Вкл</string>
     <string name="widget_lock">Блок</string>
 
-    <string name="qa_no_pc">Компьютер ещё не подключён. Откройте RemoteDesk и отсканируйте QR-код.</string>
-    <string name="qa_no_pc_short">Откройте RemoteDesk, чтобы подключить компьютер</string>
+    <string name="qa_no_pc">Компьютер ещё не подключён. Откройте Couchpad и отсканируйте QR-код.</string>
+    <string name="qa_no_pc_short">Откройте Couchpad, чтобы подключить компьютер</string>
     <string name="qa_done_monitors_off">«%1$s»: мониторы выключены</string>
     <string name="qa_done_monitors_on">«%1$s»: мониторы включены</string>
     <string name="qa_done_lock">«%1$s» заблокирован</string>

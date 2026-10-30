@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name" translatable="false">RemoteDesk</string>
+    <string name="app_name" translatable="false">Couchpad</string>
     <string name="scan_prompt">Point the camera at the QR code on the computer screen</string>
 
-    <string name="no_app_to_open">No app on the phone can open this file. It is in Downloads/RemoteDesk.</string>
+    <string name="no_app_to_open">No app on the phone can open this file. It is in Downloads/Couchpad.</string>
 
     <string name="tile_monitors_off">Monitors off</string>
     <string name="tile_monitors_on">Monitors on</string>
@@ -13,14 +13,14 @@
     <string name="qa_wake_no_mac">“%1$s”: network card address unknown. Connect to the computer in the app once.</string>
     <string name="qa_wake_no_network">Couldn’t send the signal: the phone is offline. Turn on Wi-Fi — the same network as the computer.</string>
 
-    <string name="widget_label" translatable="false">RemoteDesk</string>
+    <string name="widget_label" translatable="false">Couchpad</string>
     <string name="widget_description">Turn the computer on, its monitors off and on, lock it — without opening the app</string>
     <string name="widget_monitors_off">Monitors off</string>
     <string name="widget_monitors_on">On</string>
     <string name="widget_lock">Lock</string>
 
-    <string name="qa_no_pc">No computer connected yet. Open RemoteDesk and scan the QR code.</string>
-    <string name="qa_no_pc_short">Open RemoteDesk to connect a computer</string>
+    <string name="qa_no_pc">No computer connected yet. Open Couchpad and scan the QR code.</string>
+    <string name="qa_no_pc_short">Open Couchpad to connect a computer</string>
     <string name="qa_done_monitors_off">“%1$s”: monitors off</string>
     <string name="qa_done_monitors_on">“%1$s”: monitors on</string>
     <string name="qa_done_lock">“%1$s” is locked</string>

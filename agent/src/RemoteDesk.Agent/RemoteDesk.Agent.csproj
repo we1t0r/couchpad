@@ -9,7 +9,11 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>RemoteDesk</AssemblyName>
     <Version>0.1.0</Version>
-    <Product>RemoteDesk</Product>
+    <Product>Couchpad</Product>
+    <!-- Так программа называется в диспетчере задач и в списке автозагрузки. Имя файла пока прежнее:
+         на него настроены брандмауэр и автозапуск, сменим вместе с установщиком. -->
+    <AssemblyTitle>Couchpad</AssemblyTitle>
+    <Company>Couchpad</Company>
   </PropertyGroup>
 
   <ItemGroup>

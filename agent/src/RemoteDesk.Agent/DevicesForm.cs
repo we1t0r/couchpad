@@ -22,7 +22,7 @@ sealed class DevicesForm : Form
         this.host = host;
         ui = SynchronizationContext.Current!;
 
-        Text = "Телефоны — RemoteDesk";
+        Text = "Телефоны — Couchpad";
         Icon = AppIcon.Create();
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Dpi;
@@ -96,7 +96,7 @@ sealed class DevicesForm : Form
         var name = list.SelectedItems[0].Text;
         var answer = MessageBox.Show(
             $"Отозвать доступ у «{name}»?\n\nТелефон сразу отключится и больше не сможет управлять компьютером, пока его не подключат заново по QR-коду.",
-            "RemoteDesk", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            "Couchpad", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
         if (answer == DialogResult.Yes)
             await host.RevokeAsync(id);
     }

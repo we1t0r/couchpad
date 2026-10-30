@@ -38,7 +38,7 @@ sealed class TrayContext : ApplicationContext
         tray = new NotifyIcon
         {
             Icon = AppIcon.Create(),
-            Text = $"RemoteDesk — {host.Identity.Name}",
+            Text = $"Couchpad — {host.Identity.Name}",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -93,7 +93,7 @@ sealed class TrayContext : ApplicationContext
         cancelTimerItem.Visible = true;
         if (NeedsWarning(timer.Action))
             tray.ShowBalloonTip(6000, $"{timer.Action.Describe()} в {at}",
-                "Так попросили с телефона. Отменить можно в меню значка RemoteDesk или в приложении.", ToolTipIcon.Info);
+                "Так попросили с телефона. Отменить можно в меню значка Couchpad или в приложении.", ToolTipIcon.Info);
     }
 
     void ShowWarning(PowerTimer timer)

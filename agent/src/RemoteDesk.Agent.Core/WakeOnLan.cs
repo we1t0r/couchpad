@@ -70,7 +70,7 @@ public sealed class WindowsWakeOnLan : IWakeOnLanSetup
         {
             canFix = true;
             checks.Add(new("magic", WolState.Problem, "Пробуждение по «магическому пакету» выключено в сетевой карте",
-                "Нажмите «Исправить» — RemoteDesk включит его сам."));
+                "Нажмите «Исправить» — Couchpad включит его сам."));
         }
 
         if (adapter?.ShutdownWake is { } s5)
@@ -81,7 +81,7 @@ public sealed class WindowsWakeOnLan : IWakeOnLanSetup
             {
                 canFix = true;
                 checks.Add(new("shutdown", WolState.Problem, "Карта не слушает сеть, когда ПК выключен",
-                    "Нажмите «Исправить» — RemoteDesk включит «Включение по локальной сети после отключения»."));
+                    "Нажмите «Исправить» — Couchpad включит «Включение по локальной сети после отключения»."));
             }
         }
 
@@ -92,7 +92,7 @@ public sealed class WindowsWakeOnLan : IWakeOnLanSetup
         {
             canFix = true;
             checks.Add(new("armed", WolState.Problem, "Windows не разрешает сетевой карте будить компьютер",
-                "Нажмите «Исправить» — RemoteDesk поставит галочку «Разрешить этому устройству выводить компьютер из ждущего режима»."));
+                "Нажмите «Исправить» — Couchpad поставит галочку «Разрешить этому устройству выводить компьютер из ждущего режима»."));
         }
 
         if (FastStartup())

@@ -14,7 +14,7 @@ sealed class WolForm : Form
     public WolForm(IWakeOnLanSetup wol)
     {
         this.wol = wol;
-        Text = "Включение по сети — RemoteDesk";
+        Text = "Включение по сети — Couchpad";
         Icon = AppIcon.Create();
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;

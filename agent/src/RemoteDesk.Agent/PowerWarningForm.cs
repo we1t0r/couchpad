@@ -12,7 +12,7 @@ sealed class PowerWarningForm : Form
     public PowerWarningForm(PowerTimer timer, Action cancel)
     {
         this.timer = timer;
-        Text = "RemoteDesk";
+        Text = "Couchpad";
         Icon = AppIcon.Create();
         TopMost = true;
         ShowInTaskbar = true;

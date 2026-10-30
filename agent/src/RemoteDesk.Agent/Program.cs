@@ -35,9 +35,9 @@ static class Program
         catch (Exception e) when (e is IOException or System.Net.Sockets.SocketException)
         {
             MessageBox.Show(
-                $"Не удалось запустить RemoteDesk: порт {options.Port} занят другой программой.\n\n"
+                $"Не удалось запустить Couchpad: порт {options.Port} занят другой программой.\n\n"
                 + "Закройте её или укажите другой порт в настройках.\n\nПодробности: " + e.Message,
-                "RemoteDesk", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "Couchpad", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return 1;
         }
 

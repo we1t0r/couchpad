@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_title">RemoteDesk</string>
+    <string name="app_title">Couchpad</string>
 
     <string name="home_scan">Сканировать QR-код</string>
     <string name="home_paste">Ввести ссылку вручную</string>
     <string name="home_empty_title">Подключим компьютер</string>
-    <string name="home_empty_step1">Установите RemoteDesk на компьютер с Windows и запустите.</string>
-    <string name="home_empty_step2">На компьютере откроется окно с QR-кодом. Если не открылось — нажмите на значок RemoteDesk возле часов → «Подключить телефон…».</string>
+    <string name="home_empty_step1">Установите Couchpad на компьютер с Windows и запустите.</string>
+    <string name="home_empty_step2">На компьютере откроется окно с QR-кодом. Если не открылось — нажмите на значок Couchpad возле часов → «Подключить телефон…».</string>
     <string name="home_empty_step3">Нажмите «Сканировать QR-код» и наведите камеру на экран. Телефон и компьютер должны быть в одной сети (в одном Wi-Fi).</string>
     <string name="home_saved">Ваши компьютеры</string>
     <string name="home_found">Найдены в сети</string>
@@ -14,7 +14,7 @@
     <string name="pc_revoked">доступ отозван — подключите заново</string>
 
     <string name="found_title">Подключить «%1$s»</string>
-    <string name="found_text">Ради безопасности компьютер подключается только по QR-коду с его экрана. На компьютере нажмите на значок RemoteDesk возле часов → «Подключить телефон…» и отсканируйте код.</string>
+    <string name="found_text">Ради безопасности компьютер подключается только по QR-коду с его экрана. На компьютере нажмите на значок Couchpad возле часов → «Подключить телефон…» и отсканируйте код.</string>
 
     <string name="action_scan">Сканировать</string>
     <string name="action_cancel">Отмена</string>
@@ -28,13 +28,13 @@
 
     <string name="paste_title">Ссылка сопряжения</string>
     <string name="paste_text">Для опытных: в QR-коде на компьютере зашита ссылка, начинающаяся с rdesk://pair. Её можно вставить сюда вместо сканирования.</string>
-    <string name="bad_link">Это не код RemoteDesk. Отсканируйте QR-код из окна «Подключить телефон» на компьютере.</string>
+    <string name="bad_link">Это не код Couchpad. Отсканируйте QR-код из окна «Подключить телефон» на компьютере.</string>
 
     <string name="confirm_title">Подключить компьютер?</string>
     <string name="confirm_text">Сопрячь телефон с «%1$s» (%2$s)? Подключайте только компьютеры, которым доверяете.</string>
 
     <string name="forget_title">Забыть «%1$s»?</string>
-    <string name="forget_text">Телефон удалит ключ доступа к этому компьютеру. Чтобы подключиться снова, понадобится QR-код. На компьютере телефон тоже можно удалить: значок RemoteDesk → «Телефоны…».</string>
+    <string name="forget_text">Телефон удалит ключ доступа к этому компьютеру. Чтобы подключиться снова, понадобится QR-код. На компьютере телефон тоже можно удалить: значок Couchpad → «Телефоны…».</string>
 
     <string name="connecting">Подключаемся к «%1$s»…</string>
     <string name="pairing">Сопрягаем с «%1$s»…</string>
@@ -44,16 +44,16 @@
     <string name="via">Адрес: %1$s</string>
     <string name="info_title">О компьютере</string>
     <string name="info_os">Система</string>
-    <string name="info_agent">RemoteDesk на компьютере</string>
+    <string name="info_agent">Couchpad на компьютере</string>
     <string name="info_mac">Адаптеры для включения по сети (Wake-on-LAN)</string>
     <string name="info_wired">проводной</string>
     <string name="info_wireless">беспроводной</string>
     <string name="details">Технические подробности</string>
 
     <string name="problem_unreachable_title">Компьютер не отвечает</string>
-    <string name="problem_unreachable_text">Проверьте, что компьютер включён, на нём запущен RemoteDesk, а телефон в той же сети Wi-Fi. Если Windows спрашивала про брандмауэр — разрешите доступ для RemoteDesk.</string>
+    <string name="problem_unreachable_text">Проверьте, что компьютер включён, на нём запущен Couchpad, а телефон в той же сети Wi-Fi. Если Windows спрашивала про брандмауэр — разрешите доступ для Couchpad.</string>
     <string name="problem_wrong_pc_title">Это другой компьютер</string>
-    <string name="problem_wrong_pc_text">По этому адресу ответил компьютер с другим ключом безопасности. Если RemoteDesk переустанавливали — подключите компьютер заново по QR-коду.</string>
+    <string name="problem_wrong_pc_text">По этому адресу ответил компьютер с другим ключом безопасности. Если Couchpad переустанавливали — подключите компьютер заново по QR-коду.</string>
     <string name="problem_bad_code_title">Код не подошёл</string>
     <string name="problem_bad_code_text">Каждый QR-код срабатывает один раз. Нажмите на компьютере «Обновить код» и отсканируйте новый.</string>
     <string name="problem_code_expired_title">QR-код устарел</string>
@@ -65,11 +65,11 @@
     <string name="problem_timeout_title">Связь слишком медленная</string>
     <string name="problem_timeout_text">Компьютер перестал отвечать вовремя. Проверьте сигнал Wi-Fi и попробуйте ещё раз.</string>
     <string name="problem_incompatible_title">Нужно обновление</string>
-    <string name="problem_incompatible_text">У приложения и RemoteDesk на компьютере разные версии. Обновите оба до последней версии.</string>
+    <string name="problem_incompatible_text">У приложения и Couchpad на компьютере разные версии. Обновите оба до последней версии.</string>
     <string name="problem_protocol_title">Непонятный ответ</string>
-    <string name="problem_protocol_text">Компьютер ответил то, что приложение не понимает. Попробуйте обновить RemoteDesk.</string>
+    <string name="problem_protocol_text">Компьютер ответил то, что приложение не понимает. Попробуйте обновить Couchpad.</string>
     <string name="problem_closed_title">Соединение закрыто</string>
-    <string name="problem_closed_text">Компьютер закрыл соединение: RemoteDesk выключили, или компьютер ушёл в сон.</string>
+    <string name="problem_closed_text">Компьютер закрыл соединение: Couchpad выключили, или компьютер ушёл в сон.</string>
 
     <string name="tab_touchpad">Тачпад</string>
     <string name="tab_keyboard">Клавиатура</string>
@@ -178,7 +178,7 @@
     <string name="pw_force">Принудительно</string>
     <string name="pw_force_off">Windows вежливо попросит программы закрыться. Если где-то есть несохранённое, программа спросит, сохранить ли, и компьютер подождёт ответа — то есть может так и не выключиться, пока за ним никого нет.</string>
     <string name="pw_force_on">Программы закроются без вопросов. Несохранённые документы пропадут — включайте, только если уверены.</string>
-    <string name="pw_timer_note">Отменить таймер можно здесь, в приложении, или на компьютере — в меню значка RemoteDesk.</string>
+    <string name="pw_timer_note">Отменить таймер можно здесь, в приложении, или на компьютере — в меню значка Couchpad.</string>
     <string name="pw_set_timer">Поставить таймер</string>
 
     <string name="settings_power">Питание</string>
@@ -211,7 +211,7 @@
 
     <string name="tab_files">Файлы</string>
     <string name="files_title">Папки компьютера</string>
-    <string name="files_roots_hint">Здесь только папки, которые открыты телефону. Добавить другие или разрешить запись можно на ПК: значок RemoteDesk → «Папки для телефона…».</string>
+    <string name="files_roots_hint">Здесь только папки, которые открыты телефону. Добавить другие или разрешить запись можно на ПК: значок Couchpad → «Папки для телефона…».</string>
     <string name="files_rw">можно записывать</string>
     <string name="files_ro">только просмотр и скачивание</string>
     <string name="files_read_only">Эта папка только для чтения: файлы можно скачивать, но не загружать и не удалять.</string>
@@ -248,6 +248,6 @@
 
     <string name="share_title">Отправить на компьютер?</string>
     <string name="share_text">Файлов: %1$s → «%2$s». Они сохранятся в папку «Загрузки» на компьютере; если имя занято — рядом, с номером.</string>
-    <string name="share_no_pc">Сначала подключите компьютер: откройте RemoteDesk и отсканируйте QR-код.</string>
+    <string name="share_no_pc">Сначала подключите компьютер: откройте Couchpad и отсканируйте QR-код.</string>
     <string name="share_send">Отправить</string>
 </resources>

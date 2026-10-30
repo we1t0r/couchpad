@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_title">RemoteDesk</string>
+    <string name="app_title">Couchpad</string>
 
     <string name="home_scan">Scan QR code</string>
     <string name="home_paste">Enter link manually</string>
     <string name="home_empty_title">Let’s connect your computer</string>
-    <string name="home_empty_step1">Install RemoteDesk on your Windows computer and run it.</string>
-    <string name="home_empty_step2">A window with a QR code will open on the computer. If it didn’t, click the RemoteDesk icon next to the clock → “Connect phone…”.</string>
+    <string name="home_empty_step1">Install Couchpad on your Windows computer and run it.</string>
+    <string name="home_empty_step2">A window with a QR code will open on the computer. If it didn’t, click the Couchpad icon next to the clock → “Connect phone…”.</string>
     <string name="home_empty_step3">Tap “Scan QR code” and point the camera at the screen. The phone and the computer must be on the same network (the same Wi-Fi).</string>
     <string name="home_saved">Your computers</string>
     <string name="home_found">Found on the network</string>
@@ -14,7 +14,7 @@
     <string name="pc_revoked">access revoked — connect again</string>
 
     <string name="found_title">Connect “%1$s”</string>
-    <string name="found_text">For safety, a computer is connected only with a QR code from its screen. On the computer, click the RemoteDesk icon next to the clock → “Connect phone…” and scan the code.</string>
+    <string name="found_text">For safety, a computer is connected only with a QR code from its screen. On the computer, click the Couchpad icon next to the clock → “Connect phone…” and scan the code.</string>
 
     <string name="action_scan">Scan</string>
     <string name="action_cancel">Cancel</string>
@@ -28,13 +28,13 @@
 
     <string name="paste_title">Pairing link</string>
     <string name="paste_text">For advanced users: the QR code on the computer contains a link that starts with rdesk://pair. You can paste it here instead of scanning.</string>
-    <string name="bad_link">This is not a RemoteDesk code. Scan the QR code from the “Connect phone” window on the computer.</string>
+    <string name="bad_link">This is not a Couchpad code. Scan the QR code from the “Connect phone” window on the computer.</string>
 
     <string name="confirm_title">Connect a computer?</string>
     <string name="confirm_text">Pair this phone with “%1$s” (%2$s)? Connect only computers you trust.</string>
 
     <string name="forget_title">Forget “%1$s”?</string>
-    <string name="forget_text">The phone will delete its access key for this computer. To connect again, you will need to scan the QR code. You can also remove the phone on the computer: RemoteDesk icon → “Phones…”.</string>
+    <string name="forget_text">The phone will delete its access key for this computer. To connect again, you will need to scan the QR code. You can also remove the phone on the computer: Couchpad icon → “Phones…”.</string>
 
     <string name="connecting">Connecting to “%1$s”…</string>
     <string name="pairing">Pairing with “%1$s”…</string>
@@ -44,16 +44,16 @@
     <string name="via">Address: %1$s</string>
     <string name="info_title">About the computer</string>
     <string name="info_os">System</string>
-    <string name="info_agent">RemoteDesk on the computer</string>
+    <string name="info_agent">Couchpad on the computer</string>
     <string name="info_mac">Adapters for turning on over the network (Wake-on-LAN)</string>
     <string name="info_wired">wired</string>
     <string name="info_wireless">wireless</string>
     <string name="details">Technical details</string>
 
     <string name="problem_unreachable_title">The computer is not responding</string>
-    <string name="problem_unreachable_text">Check that the computer is on, RemoteDesk is running on it, and the phone is on the same Wi-Fi network. If Windows asked about the firewall, allow access for RemoteDesk.</string>
+    <string name="problem_unreachable_text">Check that the computer is on, Couchpad is running on it, and the phone is on the same Wi-Fi network. If Windows asked about the firewall, allow access for Couchpad.</string>
     <string name="problem_wrong_pc_title">This is a different computer</string>
-    <string name="problem_wrong_pc_text">A computer with a different security key answered at this address. If RemoteDesk was reinstalled, connect the computer again with the QR code.</string>
+    <string name="problem_wrong_pc_text">A computer with a different security key answered at this address. If Couchpad was reinstalled, connect the computer again with the QR code.</string>
     <string name="problem_bad_code_title">The code didn’t work</string>
     <string name="problem_bad_code_text">Each QR code works once. On the computer, click “Refresh code” and scan the new one.</string>
     <string name="problem_code_expired_title">The QR code has expired</string>
@@ -65,11 +65,11 @@
     <string name="problem_timeout_title">The connection is too slow</string>
     <string name="problem_timeout_text">The computer stopped responding in time. Check the Wi-Fi signal and try again.</string>
     <string name="problem_incompatible_title">An update is needed</string>
-    <string name="problem_incompatible_text">The app and RemoteDesk on the computer are different versions. Update both to the latest version.</string>
+    <string name="problem_incompatible_text">The app and Couchpad on the computer are different versions. Update both to the latest version.</string>
     <string name="problem_protocol_title">Unexpected answer</string>
-    <string name="problem_protocol_text">The computer answered something the app doesn’t understand. Try updating RemoteDesk.</string>
+    <string name="problem_protocol_text">The computer answered something the app doesn’t understand. Try updating Couchpad.</string>
     <string name="problem_closed_title">The connection was closed</string>
-    <string name="problem_closed_text">The computer closed the connection: RemoteDesk was turned off, or the computer went to sleep.</string>
+    <string name="problem_closed_text">The computer closed the connection: Couchpad was turned off, or the computer went to sleep.</string>
 
     <string name="tab_touchpad">Touchpad</string>
     <string name="tab_keyboard">Keyboard</string>
@@ -178,7 +178,7 @@
     <string name="pw_force">Force</string>
     <string name="pw_force_off">Windows politely asks programs to close. If something is unsaved, the program asks whether to save it and the computer waits for an answer — so it may never shut down if nobody is there.</string>
     <string name="pw_force_on">Programs close without asking. Unsaved documents are lost — only use this if you are sure.</string>
-    <string name="pw_timer_note">You can cancel the timer here in the app or on the computer — in the RemoteDesk icon menu.</string>
+    <string name="pw_timer_note">You can cancel the timer here in the app or on the computer — in the Couchpad icon menu.</string>
     <string name="pw_set_timer">Set timer</string>
 
     <string name="settings_power">Power</string>
@@ -211,7 +211,7 @@
 
     <string name="tab_files">Files</string>
     <string name="files_title">Computer folders</string>
-    <string name="files_roots_hint">Only folders shared with the phone are shown. To add others or allow writing, on the PC: RemoteDesk icon → “Folders for phone…”.</string>
+    <string name="files_roots_hint">Only folders shared with the phone are shown. To add others or allow writing, on the PC: Couchpad icon → “Folders for phone…”.</string>
     <string name="files_rw">read and write</string>
     <string name="files_ro">view and download only</string>
     <string name="files_read_only">This folder is read-only: you can download files but not upload or delete.</string>
@@ -248,6 +248,6 @@
 
     <string name="share_title">Send to the computer?</string>
     <string name="share_text">%1$s file(s) → “%2$s”. They are saved to the computer’s Downloads folder; if a name is taken, next to it with a number.</string>
-    <string name="share_no_pc">Connect a computer first: open RemoteDesk and scan the QR code.</string>
+    <string name="share_no_pc">Connect a computer first: open Couchpad and scan the QR code.</string>
     <string name="share_send">Send</string>
 </resources>

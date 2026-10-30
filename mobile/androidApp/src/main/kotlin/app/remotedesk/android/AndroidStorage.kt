@@ -24,7 +24,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * Файлы телефона: скачанное — в «Загрузки/RemoteDesk» (через MediaStore, без разрешений),
+ * Файлы телефона: скачанное — в «Загрузки/Couchpad» (через MediaStore, без разрешений),
  * отправка — через системный выбор файлов.
  */
 class AndroidStorage(private val context: Context) : PhoneStorage {
@@ -52,20 +52,20 @@ class AndroidStorage(private val context: Context) : PhoneStorage {
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, name)
                 put(MediaStore.Downloads.MIME_TYPE, mime)
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RemoteDesk")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Couchpad")
                 // Пока качается, файл не виден другим приложениям.
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val resolver = context.contentResolver
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("Не удалось создать файл в «Загрузках»")
             val out = resolver.openOutputStream(uri) ?: error("Не удалось открыть файл для записи")
-            Target(out, uri, mime, "Загрузки/RemoteDesk") { ok ->
+            Target(out, uri, mime, "Загрузки/Couchpad") { ok ->
                 if (ok) resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
                 else resolver.delete(uri, null, null)
             }
         } else {
             // Android 8–9: папка приложения, разрешение на память не нужно.
-            val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "RemoteDesk").apply { mkdirs() }
+            val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Couchpad").apply { mkdirs() }
             var file = File(dir, name)
             var i = 2
             while (file.exists()) file = File(dir, "${name.substringBeforeLast('.')} (${i++})" + name.substringAfterLast('.', "").let { if (it.isEmpty()) "" else ".$it" })

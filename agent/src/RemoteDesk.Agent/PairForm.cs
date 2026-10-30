@@ -19,7 +19,7 @@ sealed class PairForm : Form
         this.host = host;
         ui = SynchronizationContext.Current!;
 
-        Text = "Подключить телефон — RemoteDesk";
+        Text = "Подключить телефон — Couchpad";
         Icon = AppIcon.Create();
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -32,7 +32,7 @@ sealed class PairForm : Form
 
         var title = new Label
         {
-            Text = "Отсканируйте код в приложении RemoteDesk",
+            Text = "Отсканируйте код в приложении Couchpad",
             Font = new Font("Segoe UI Semibold", 13f),
             AutoSize = true,
             Anchor = AnchorStyles.None,

@@ -289,7 +289,7 @@ public sealed class FileService(ShareStore shares)
     {
         var full = Resolve(rootId, path, out var root);
         if (!root.Writable)
-            throw new FileAccessException(403, "read_only", $"Папка «{root.Name}» открыта только для чтения. Разрешить запись можно на ПК: значок RemoteDesk → «Папки для телефона»");
+            throw new FileAccessException(403, "read_only", $"Папка «{root.Name}» открыта только для чтения. Разрешить запись можно на ПК: значок Couchpad → «Папки для телефона»");
         return full;
     }
 

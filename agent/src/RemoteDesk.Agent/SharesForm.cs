@@ -25,7 +25,7 @@ sealed class SharesForm : Form
         this.shares = shares;
         folders = shares.Folders.ToList();
 
-        Text = "Папки для телефона — RemoteDesk";
+        Text = "Папки для телефона — Couchpad";
         Icon = AppIcon.Create();
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Dpi;

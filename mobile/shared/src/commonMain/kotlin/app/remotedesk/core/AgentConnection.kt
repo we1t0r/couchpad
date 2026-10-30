@@ -75,6 +75,8 @@ class AgentConnection private constructor(
     val host: String,
     val agent: AgentInfo,
     val permissions: List<String>,
+    /** ПК на экране входа Windows: это помощник службы входа, после входа его сменит обычный агент. */
+    val signIn: Boolean = false,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val pongs = MutableSharedFlow<Long>(extraBufferCapacity = 16)
@@ -316,7 +318,10 @@ class AgentConnection private constructor(
                 opened.dispose()
                 throw AgentException(Problem.WrongPc)
             }
-            return AgentConnection(opened.client, opened.session, opened.host, agent, opened.reply.strings("permissions"))
+            return AgentConnection(
+                opened.client, opened.session, opened.host, agent, opened.reply.strings("permissions"),
+                signIn = opened.reply.bool("signin") ?: false,
+            )
         }
 
         private class Opened(

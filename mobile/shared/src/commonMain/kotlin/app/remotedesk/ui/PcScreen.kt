@@ -67,6 +67,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
@@ -241,7 +243,10 @@ private fun RemoteControl(
     onImmersive: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
-    var tab by rememberSaveable { mutableStateOf(Tab.entries[initialTab]) }
+    // На экране входа Windows файлов и буфера обмена нет, а нужен в первую очередь экран — ввести PIN.
+    val signIn = state.connection.signIn
+    val tabs = if (signIn) Tab.entries - Tab.Files else Tab.entries
+    var tab by rememberSaveable(signIn) { mutableStateOf(if (signIn) Tab.Screen else Tab.entries[initialTab]) }
     // Ушли с вкладки «Экран» — возвращаем шапку и вкладки.
     LaunchedEffect(tab) { if (tab != Tab.Screen) onImmersive(false) }
     val input = state.connection.input
@@ -258,11 +263,12 @@ private fun RemoteControl(
     val notify: suspend (String) -> Unit = { snackbar.showSnackbar(it) }
 
     Column(modifier) {
+        if (signIn) SignInBanner()
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
                 Tab.Screen -> ScreenPanel(state.connection, settings, immersive, onImmersive, Modifier.fillMaxSize())
-                Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipboard, files, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize())
+                Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipboard, files.takeIf { !signIn }, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize(), showClipboard = !signIn)
                 Tab.Files -> if (files != null) FilesPanel(files, extras.transfers, extras.storage, notify, Modifier.fillMaxSize())
                 Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())
                 Tab.Info -> Column(
@@ -273,7 +279,7 @@ private fun RemoteControl(
         }
         // Пока открыта клавиатура телефона, вкладки прячутся — полю ввода остаётся больше места.
         if (!immersive && WindowInsets.ime.getBottom(LocalDensity.current) == 0) NavigationBar(windowInsets = WindowInsets(0), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-            Tab.entries.forEach { t ->
+            tabs.forEach { t ->
                 NavigationBarItem(
                     selected = tab == t,
                     onClick = { tab = t },
@@ -506,4 +512,16 @@ private fun problemText(problem: Problem): Pair<StringResource, StringResource> 
     Problem.Incompatible -> Res.string.problem_incompatible_title to Res.string.problem_incompatible_text
     Problem.Protocol -> Res.string.problem_protocol_title to Res.string.problem_protocol_text
     Problem.Closed -> Res.string.problem_closed_title to Res.string.problem_closed_text
+}
+
+/** ПК на экране входа или блокировки Windows: подсказать, что сейчас можно. */
+@Composable
+private fun SignInBanner() {
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(stringResource(Res.string.signin_banner), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    }
 }

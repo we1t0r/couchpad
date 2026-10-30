@@ -2,6 +2,7 @@ namespace RemoteDesk.Agent.Core;
 
 /// <param name="Loopback">Слушать только 127.0.0.1 — для разработки и тестов (без окна брандмауэра).</param>
 /// <param name="Input">Куда отправлять ввод; по умолчанию — настоящие мышь и клавиатура Windows.</param>
+/// <param name="SignIn">Помощник службы на экране входа Windows (см. <see cref="AgentServices.SignIn"/>).</param>
 /// <param name="Power">Питание и мониторы; по умолчанию — Windows. Если <paramref name="Input"/> — запись
 /// (<see cref="RecordingInput"/>), то и питание пишется туда же: тесты никогда не выключат ПК.</param>
 public sealed record AgentOptions(
@@ -13,8 +14,12 @@ public sealed record AgentOptions(
     IPowerSink? Power = null,
     IWakeOnLanSetup? Wol = null,
     IClipboard? Clipboard = null,
-    IScreenSource? Screen = null)
+    IScreenSource? Screen = null,
+    bool SignIn = false)
 {
+    /// <summary>Что можно телефону с экрана входа Windows: файлы и буфер обмена — только после входа.</summary>
+    public static readonly string[] SignInPermissions = ["input", "power", "screen"];
+
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
 }
@@ -22,6 +27,7 @@ public sealed record AgentOptions(
 /// <summary>Собирает агента целиком: личность, список телефонов, сервер, объявление в сети.</summary>
 public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
 {
+    public string DataDir => options.DataDir;
     public AgentIdentity Identity { get; } = AgentIdentity.LoadOrCreate(options.DataDir);
     public PairingStore Devices { get; } = new(options.DataDir);
     public PairingSecrets Secrets { get; } = new();
@@ -61,7 +67,8 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
             };
         var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle, Outbox,
             // При записи ввода (тесты) — ненастоящий экран: автотест не должен снимать экран разработчика.
-            options.Screen ?? (options.Input is RecordingInput ? new SyntheticScreen() : new NullScreen()));
+            options.Screen ?? (options.Input is RecordingInput ? new SyntheticScreen() : new NullScreen()),
+            options.SignIn ? AgentOptions.SignInPermissions : null, options.SignIn);
         Server = new AgentServer(Identity, Devices, Secrets, Info, services);
         if (OperatingSystem.IsWindows() && powerSink is WindowsPower windows)
             windows.MonitorsProblem += msg =>

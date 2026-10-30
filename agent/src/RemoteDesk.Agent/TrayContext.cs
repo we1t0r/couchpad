@@ -31,6 +31,14 @@ sealed class TrayContext : ApplicationContext
         autostartItem.Click += (_, _) => Autostart.Set(autostartItem.Checked);
         menu.Opening += (_, _) => autostartItem.Checked = Autostart.IsEnabled;
         menu.Items.Add(autostartItem);
+        var signInItem = new ToolStripMenuItem("Вход в Windows с телефона");
+        signInItem.Click += async (_, _) => await ToggleSignInAsync();
+        menu.Opening += (_, _) =>
+        {
+            signInItem.Checked = SignInSetup.IsInstalled;
+            signInItem.Text = SignInSetup.IsOutdated ? "Вход в Windows с телефона — обновить" : "Вход в Windows с телефона";
+        };
+        menu.Items.Add(signInItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выход", null, (_, _) => ExitThread());
 
@@ -183,6 +191,32 @@ sealed class TrayContext : ApplicationContext
             phoneFilesForm = new PhoneFilesForm(host);
         phoneFilesForm.Show();
         phoneFilesForm.Activate();
+    }
+
+    /// <summary>
+    /// Включить, обновить или выключить службу входа. Ставит её копия агента с правами администратора —
+    /// Windows спросит разрешения в окне UAC.
+    /// </summary>
+    async Task ToggleSignInAsync()
+    {
+        var install = !SignInSetup.IsInstalled || SignInSetup.IsOutdated;
+        if (install && !SignInSetup.IsInstalled)
+        {
+            var answer = MessageBox.Show(
+                "Телефон сможет показать экран входа и блокировки Windows и ввести на нём PIN или пароль — "
+                + "например, после включения компьютера по сети.\n\n"
+                + "Для этого Couchpad установит службу Windows. На экране входа телефону доступны только экран, "
+                + "клавиши и питание, файлы и буфер обмена — после входа.\n\nWindows попросит разрешения администратора.",
+                "Вход в Windows с телефона", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (answer != DialogResult.OK)
+                return;
+        }
+        var (started, code) = await SignInSetup.RunElevatedAsync(install, host.DataDir, host.Server.Port);
+        if (!started || code != 0)
+            return; // отказ в окне UAC или ошибка — о ней сообщило окно установки
+        tray.ShowBalloonTip(5000, "Couchpad", install
+            ? "Вход в Windows с телефона включён. Проверьте: заблокируйте компьютер (Win+L) и откройте «Экран» на телефоне."
+            : "Вход в Windows с телефона выключен.", ToolTipIcon.Info);
     }
 
     void ShowWol()

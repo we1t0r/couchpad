@@ -399,4 +399,43 @@ public sealed class ServerTests : IAsyncLifetime
         Assert.Equal(fp, host.Identity.Fingerprint);
         Assert.Single(host.Devices.All);
     }
+
+    [Fact]
+    public async Task Sign_in_helper_lets_paired_phones_see_the_screen_but_not_files_or_pairing()
+    {
+        var token = await PairAsync();
+        var key = host.Secrets.Current.Key;
+        await host.DisposeAsync();
+
+        // Помощник службы входа: та же папка данных, тот же сертификат — телефон его узнаёт.
+        host = new AgentHost(Options() with { SignIn = true });
+        await host.StartAsync();
+
+        using (var pairing = await ConnectAsync())
+        {
+            await SendAsync(pairing, Message.Build("pair", ("secret", key), ("deviceId", "phone-2"), ("deviceName", "Чужой"), ("platform", "android")));
+            var refused = await ReceiveAsync(pairing);
+            Assert.Equal(Protocol.Errors.Forbidden, refused.Str("code"));
+        }
+
+        using var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        var welcome = await ReceiveAsync(ws);
+        Assert.Equal("welcome", welcome.Str("t"));
+        Assert.True(welcome.Bool("signin"));
+        Assert.Equal(AgentOptions.SignInPermissions, welcome["permissions"]!.AsArray().Select(p => p!.GetValue<string>()));
+
+        await SendAsync(ws, Message.Build("clip_get"));
+        Assert.Equal(Protocol.Errors.Forbidden, (await ReceiveAsync(ws)).Str("code"));
+
+        using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://127.0.0.1:{host.Server.Port}/api/files/roots");
+        request.Headers.Add("X-RDesk-Device", "phone-1");
+        request.Headers.Add("X-RDesk-Token", token);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await http.SendAsync(request)).StatusCode);
+
+        await SendAsync(ws, Message.Build("key", ("k", "a"), ("down", true)));
+        await SendAsync(ws, Message.Build("ping", ("n", 1)));
+        Assert.Equal("pong", (await ReceiveAsync(ws)).Str("t"));
+    }
 }

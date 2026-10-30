@@ -13,11 +13,28 @@ static class Program
     ///   --dev-link файл   записать ссылку сопряжения в файл (для автотестов приложения);
     ///   --input-log файл  не трогать мышь и клавиатуру, а записывать ввод в файл (для автотестов);
     ///   --send файлы…     отправить файлы на телефон (так вызывает пункт меню Проводника).
+    ///   --signin-test     вести себя как помощник на экране входа (только с --input-log, для автотестов);
+    ///   --service         служба «вход в Windows» (запускает Windows);
+    ///   --desktop-helper  помощник службы на экране входа (запускает служба);
+    ///   --install-service / --uninstall-service  установить или удалить службу (с правами администратора).
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
         var options = ParseArgs(args);
+
+        // Служба входа и её части: ни значка в трее, ни своего «единственного экземпляра».
+        if (args.Contains("--service"))
+            return SignInService.Run(HelperArgs(options));
+        if (args.Contains("--desktop-helper"))
+        {
+            ApplicationConfiguration.Initialize(); // DPI: экран снимается в настоящих пикселях
+            return DesktopHelper.Run(args, options.DataDir, options.Port);
+        }
+        if (args.Contains("--install-service"))
+            return SignInSetup.Install(options.DataDir, options.Port);
+        if (args.Contains("--uninstall-service"))
+            return SignInSetup.Uninstall();
 
         var sendIndex = Array.IndexOf(args, "--send");
         string[] toSend = sendIndex >= 0 ? args[(sendIndex + 1)..] : [];
@@ -36,9 +53,7 @@ static class Program
         AgentHost host;
         try
         {
-            host = new AgentHost(options);
-            // StartAsync на пуле потоков, чтобы не зависнуть на контексте UI.
-            Task.Run(() => host.StartAsync()).GetAwaiter().GetResult();
+            host = StartHost(options);
         }
         catch (Exception e) when (e is IOException or System.Net.Sockets.SocketException)
         {
@@ -74,11 +89,37 @@ static class Program
         return 0;
     }
 
+    /// <summary>
+    /// Порт может быть ещё занят помощником службы входа: он отдаёт его, как только видит агента
+    /// (обычно за полсекунды после входа в Windows). Поэтому несколько попыток, а не ошибка сразу.
+    /// </summary>
+    static AgentHost StartHost(AgentOptions options)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            var host = new AgentHost(options);
+            try
+            {
+                // StartAsync на пуле потоков, чтобы не зависнуть на контексте UI.
+                Task.Run(() => host.StartAsync()).GetAwaiter().GetResult();
+                return host;
+            }
+            catch (Exception e) when (e is IOException or System.Net.Sockets.SocketException && attempt < 10 && SignInSetup.IsInstalled)
+            {
+                Task.Run(() => host.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(5));
+                Thread.Sleep(1000);
+            }
+        }
+    }
+
+    static string[] HelperArgs(AgentOptions options) => ["--data-dir", options.DataDir, "--port", options.Port.ToString()];
+
     static AgentOptions ParseArgs(string[] args)
     {
         var dataDir = AgentOptions.DefaultDataDir;
         var port = Protocol.DefaultPort;
         var loopback = false;
+        var signIn = false;
         IInputSink? input = null;
         for (var i = 0; i < args.Length; i++)
         {
@@ -97,11 +138,24 @@ static class Program
                 case "--loopback":
                     loopback = true;
                     break;
+                case "--signin-test":
+                    signIn = true;
+                    break;
             }
         }
-        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input,
+        // При записи ввода в файл (автотесты) — ненастоящий экран из агента, настоящий не снимаем.
+        // Иначе — настоящие экран и ввод, а пока компьютер заблокирован — через помощника службы входа.
+        LockAwareDesktop? desktop = null;
+        if (input is null)
+        {
+            var bridge = DesktopHelper.Client();
+            var session = Sessions.Current;
+            desktop = new LockAwareDesktop(new WindowsInput(), new GdiScreen(), bridge, bridge, Sessions.Cached(() => Sessions.IsLocked(session)));
+        }
+        return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input ?? (IInputSink?)desktop,
             Clipboard: input as IClipboard ?? new WinFormsClipboard(),
-            // При записи ввода в файл (автотесты) — ненастоящий экран из агента, настоящий не снимаем.
-            Screen: input is null ? new GdiScreen() : null);
+            Screen: desktop,
+            // Агент как на экране входа — только для автотестов приложения, вместе с --input-log.
+            SignIn: signIn && input is not null);
     }
 }

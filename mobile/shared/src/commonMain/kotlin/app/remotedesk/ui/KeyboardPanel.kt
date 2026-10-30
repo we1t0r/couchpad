@@ -127,6 +127,7 @@ fun KeyboardPanel(
     addClip: (String) -> Unit,
     notify: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
+    showClipboard: Boolean = true,
 ) {
     val input = connection.input
     val relay = remember(input) { TextRelay(input) }
@@ -259,47 +260,49 @@ fun KeyboardPanel(
             }
         }
 
-        SectionTitle(stringResource(Res.string.kb_clipboard))
-        Panel {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = { fromPc() }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp)) {
-                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(Res.string.clip_from_pc))
+        if (showClipboard) {
+            SectionTitle(stringResource(Res.string.kb_clipboard))
+            Panel {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(onClick = { fromPc() }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp)) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(Res.string.clip_from_pc))
+                    }
+                    FilledTonalButton(
+                        onClick = { toPc(null) },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(vertical = 12.dp),
+                    ) {
+                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(Res.string.clip_to_pc))
+                    }
                 }
-                FilledTonalButton(
-                    onClick = { toPc(null) },
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(vertical = 12.dp),
-                ) {
-                    Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(Res.string.clip_to_pc))
-                }
-            }
-            if (clipHistory.isNotEmpty()) {
-                Hint(stringResource(Res.string.clip_history))
-                clipHistory.forEach { item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Row(
-                            Modifier.weight(1f).clickable {
-                                clipboard.setText(item)
-                                scope.launch { notify(getString(Res.string.clip_copied)) }
-                            }.padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text(item.replace('\n', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
-                        }
-                        IconButton(onClick = { toPc(item) }) {
-                            Icon(Icons.Default.Upload, contentDescription = stringResource(Res.string.clip_to_pc), tint = MaterialTheme.colorScheme.primary)
+                if (clipHistory.isNotEmpty()) {
+                    Hint(stringResource(Res.string.clip_history))
+                    clipHistory.forEach { item ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                Modifier.weight(1f).clickable {
+                                    clipboard.setText(item)
+                                    scope.launch { notify(getString(Res.string.clip_copied)) }
+                                }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text(item.replace('\n', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                            }
+                            IconButton(onClick = { toPc(item) }) {
+                                Icon(Icons.Default.Upload, contentDescription = stringResource(Res.string.clip_to_pc), tint = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
             }
-        }
 
+        }
         SectionTitle(stringResource(Res.string.kb_shortcuts))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             shortcuts.forEach { sc ->

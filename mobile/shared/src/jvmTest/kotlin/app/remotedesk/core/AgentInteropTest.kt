@@ -41,11 +41,15 @@ class AgentInteropTest {
         File(agentDir, "shares.json").writeText(
             """{"folders":[{"id":"t","name":"Тест","path":"$json","writable":true}],"wholeComputer":false,"wholeComputerWritable":false,"inbox":"$json"}""",
         )
-        // --input-log: агент записывает ввод в файл и не трогает настоящие мышь и клавиатуру.
+        launch(linkFile)
+    }
+
+    /** --input-log: агент записывает ввод в файл и не трогает настоящие мышь и клавиатуру. */
+    private fun launch(linkFile: File, vararg extra: String) {
         agent = ProcessBuilder(
             exe.path, "--loopback", "--port", PORT.toString(),
             "--data-dir", File(dataDir, "agent").path, "--dev-link", linkFile.path,
-            "--input-log", inputLog.path,
+            "--input-log", inputLog.path, *extra,
         ).redirectErrorStream(true).start()
         val deadline = System.currentTimeMillis() + 20_000
         while (!linkFile.isFile && System.currentTimeMillis() < deadline) {
@@ -53,6 +57,38 @@ class AgentInteropTest {
             Thread.sleep(200)
         }
         check(linkFile.isFile) { "агент не записал ссылку за 20 с" }
+    }
+
+    private fun stop() {
+        agent?.let {
+            it.destroyForcibly()
+            it.waitFor(5, TimeUnit.SECONDS)
+        }
+        agent = null
+    }
+
+    @Test
+    fun sign_in_screen_agent_gives_screen_and_keys_only() {
+        if (!available) {
+            println("SKIPPED: агент не найден: $exe")
+            return
+        }
+        runBlocking {
+            withTimeout(60_000) {
+                val paired = AgentConnection.pair(link(), device)
+                assertTrue(!paired.connection.signIn)
+                paired.connection.close()
+                // Тот же ПК на экране входа Windows: помощник службы с той же папкой данных.
+                stop()
+                launch(File(dataDir, "link-signin.txt"), "--signin-test")
+                val locked = AgentConnection.connect(paired.pc, device)
+                assertTrue(locked.signIn)
+                assertEquals(listOf("input", "power", "screen"), locked.permissions)
+                locked.startScreen(null, 800)
+                withTimeout(10_000) { locked.screenFrame.filterNotNull().first() }
+                locked.close()
+            }
+        }
     }
 
     @AfterTest

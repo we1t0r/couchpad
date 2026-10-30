@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.time.TimeSource
 
 /** Что сейчас с соединением — то, что видит пользователь. */
 sealed interface LinkState {
@@ -33,9 +34,13 @@ class ConnectionController(
     val state: StateFlow<LinkState> = _state.asStateFlow()
     private var job: Job? = null
 
-    fun connect(pcId: String) {
+    /**
+     * [retryForMs] — сколько пытаться, если ПК не отвечает. Нужно после входа в Windows: помощник экрана входа
+     * уже закрылся, а обычный агент запустится через несколько секунд.
+     */
+    fun connect(pcId: String, retryForMs: Long = 0) {
         val pc = store.get(pcId) ?: return
-        start(LinkState.Connecting(pc.id, pc.name, pairing = false)) {
+        start(LinkState.Connecting(pc.id, pc.name, pairing = false), retryForMs) {
             val connection = AgentConnection.connect(pc, device)
             store.updateInfo(pc.id, connection.agent, connection.host)
             pc.id to connection
@@ -59,31 +64,41 @@ class ConnectionController(
             scope.launch { current.connection.close() }
     }
 
-    private fun start(connecting: LinkState.Connecting, open: suspend () -> Pair<String, AgentConnection>) {
+    private fun start(connecting: LinkState.Connecting, retryForMs: Long = 0, open: suspend () -> Pair<String, AgentConnection>) {
         disconnect()
         _state.value = connecting
         job = scope.launch {
-            val (pcId, connection) = try {
-                open()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                fail(connecting.pcId, connecting.name, e)
-                return@launch
+            val started = TimeSource.Monotonic.markNow()
+            var opened: Pair<String, AgentConnection>? = null
+            while (opened == null) {
+                opened = try {
+                    open()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    val problem = (e as? AgentException)?.problem ?: Problem.Unreachable
+                    if (problem !in listOf(Problem.Unreachable, Problem.Timeout) || started.elapsedNow().inWholeMilliseconds >= retryForMs) {
+                        fail(connecting.pcId, connecting.name, e)
+                        return@launch
+                    }
+                    delay(2_000)
+                    null
+                }
             }
+            val (pcId, connection) = opened
             try {
                 store.markUsed(pcId)
                 _state.value = LinkState.Connected(pcId, connection)
                 val watcher = launch {
                     val reason = connection.closed.filterNotNull().first()
-                    fail(pcId, connection.agent.name, reason)
+                    lost(pcId, connection, reason)
                 }
                 while (true) {
                     val ms = try {
                         connection.ping()
                     } catch (e: AgentException) {
                         // Причину закрытия сообщит watcher; таймаут пинга сам по себе — тоже обрыв.
-                        if (e.problem == Problem.Timeout) fail(pcId, connection.agent.name, e)
+                        if (e.problem == Problem.Timeout) lost(pcId, connection, e)
                         break
                     }
                     (_state.value as? LinkState.Connected)?.let { if (it.connection === connection) _state.value = it.copy(pingMs = ms) }
@@ -94,6 +109,11 @@ class ConnectionController(
                 connection.close()
             }
         }
+    }
+
+    /** Связь пропала. С экрана входа — это вход в Windows: ждём обычного агента и подключаемся к нему сами. */
+    private fun lost(pcId: String, connection: AgentConnection, e: Exception) {
+        if (connection.signIn) connect(pcId, retryForMs = 90_000) else fail(pcId, connection.agent.name, e)
     }
 
     private fun fail(pcId: String?, name: String, e: Exception) {

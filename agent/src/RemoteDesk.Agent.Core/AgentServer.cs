@@ -14,6 +14,7 @@ namespace RemoteDesk.Agent.Core;
 
 /// <summary>Что агент умеет делать по просьбе телефона. В тестах всё подменяется записью.</summary>
 /// <param name="Recycle">Удалить в корзину (в тестах — просто удалить).</param>
+/// <param name="SignIn">Агент помощника службы на экране входа: без файлов и буфера обмена, без сопряжения.</param>
 public sealed record AgentServices(
     IInputSink Input,
     PowerScheduler Power,
@@ -22,7 +23,9 @@ public sealed record AgentServices(
     IClipboard Clipboard,
     Action<string> Recycle,
     Outbox Outbox,
-    IScreenSource Screen);
+    IScreenSource Screen,
+    IReadOnlyList<string>? Permissions = null,
+    bool SignIn = false);
 
 /// <summary>Сервер агента поверх TLS: wss://ip:port/ws для управления и https://ip:port/api/… для файлов.</summary>
 public sealed class AgentServer(
@@ -56,6 +59,9 @@ public sealed class AgentServer(
     internal PowerScheduler Power => power;
     internal IWakeOnLanSetup Wol => wol;
     internal AgentServices Services => services;
+
+    /// <summary>Что разрешено телефонам на этом агенте.</summary>
+    internal IReadOnlyList<string> Permissions => services.Permissions ?? Protocol.DefaultPermissions;
 
     /// <summary>Телефон попросил открыть на ПК мастер включения по сети.</summary>
     public event Action? WolSetupRequested;
@@ -399,6 +405,13 @@ internal sealed class Session(AgentServer server, WebSocket ws)
             return;
         }
 
+        // На экране входа QR-кода нет и быть не должно: подключаются только уже сопряжённые телефоны.
+        if (server.Services.SignIn)
+        {
+            await CloseWithErrorAsync(Protocol.Errors.Forbidden, "Компьютер на экране входа. Подключите телефон после входа в Windows");
+            return;
+        }
+
         switch (server.Secrets.TryConsume(secret))
         {
             case PairResult.Bad:
@@ -414,7 +427,7 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         var token = server.Devices.Add(deviceId, name, platform);
         var device = server.Devices.All.First(d => d.DeviceId == deviceId);
         DeviceId = deviceId;
-        permissions = Protocol.DefaultPermissions;
+        permissions = [.. server.Permissions];
         await SendAsync(Message.Build("paired", ("token", token), ("agent", server.Info())));
         server.OnAuthenticated(this, device, justPaired: true);
     }
@@ -430,8 +443,10 @@ internal sealed class Session(AgentServer server, WebSocket ws)
             return;
         }
         DeviceId = device.DeviceId;
-        permissions = Protocol.DefaultPermissions;
-        await SendAsync(Message.Build("welcome", ("agent", server.Info()), ("permissions", Protocol.DefaultPermissions)));
+        permissions = [.. server.Permissions];
+        // signin — это помощник службы на экране входа: после входа в Windows его сменит обычный агент.
+        await SendAsync(Message.Build("welcome", ("agent", server.Info()), ("permissions", permissions),
+            ("signin", server.Services.SignIn ? true : null)));
         if (server.Power.Current is { } timer)
             await SendAsync(AgentServer.TimerMessage(timer));
         server.OnAuthenticated(this, device, justPaired: false);

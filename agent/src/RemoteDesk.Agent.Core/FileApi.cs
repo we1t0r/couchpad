@@ -17,7 +17,7 @@ static class FileApi
             await Fail(ctx, 401, Protocol.Errors.Revoked, "Этот телефон не сопряжён с компьютером");
             return;
         }
-        if (!Protocol.DefaultPermissions.Contains("files"))
+        if (!server.Permissions.Contains("files"))
         {
             await Fail(ctx, 403, Protocol.Errors.Forbidden, "Доступ к файлам выключен на компьютере");
             return;
@@ -131,7 +131,7 @@ static class FileApi
             await Fail(ctx, 401, Protocol.Errors.Revoked, "Этот телефон не сопряжён с компьютером");
             return;
         }
-        if (!Protocol.DefaultPermissions.Contains("clipboard"))
+        if (!server.Permissions.Contains("clipboard"))
         {
             await Fail(ctx, 403, Protocol.Errors.Forbidden, "Буфер обмена выключен на компьютере");
             return;

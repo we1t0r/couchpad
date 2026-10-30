@@ -28,6 +28,12 @@ sealed class DxgiVideo : IVideoCapture
     long lastFrameAt;
     bool keyWanted = true;
     bool pending, hasFrame;
+
+    // Экран замер — досылаем тот же кадр ещё несколько раз: каждый повтор кодировщик делает чётче,
+    // и мелкий текст дотягивается до полного качества даже на скромном битрейте.
+    const int MaxRefines = 6;
+    static readonly long RefineAfterTicks = TimeSpan.FromMilliseconds(150).Ticks;
+    int refines = MaxRefines;
     byte[] pointerBuffer = new byte[64 * 64 * 4];
 
     public int Width => converter.Width;
@@ -90,7 +96,8 @@ sealed class DxgiVideo : IVideoCapture
     public VideoFrame? Next(int timeoutMs)
     {
         // Кадр отложен из-за ограничения частоты — ждём не дольше, чем до его очереди.
-        var wait = pending ? (int)Math.Clamp((lastFrameAt + minFrameTicks - DateTime.UtcNow.Ticks) / TimeSpan.TicksPerMillisecond, 1, timeoutMs) : timeoutMs;
+        var wakeAt = pending ? lastFrameAt + minFrameTicks : refines < MaxRefines ? lastFrameAt + RefineAfterTicks : long.MaxValue;
+        var wait = wakeAt == long.MaxValue ? timeoutMs : (int)Math.Clamp((wakeAt - DateTime.UtcNow.Ticks) / TimeSpan.TicksPerMillisecond, 1, timeoutMs);
         var result = duplication.AcquireNextFrame((uint)wait, out var info, out var resource);
         if (result.Code != WaitTimeout)
         {
@@ -105,6 +112,7 @@ sealed class DxgiVideo : IVideoCapture
                     using var texture = resource.QueryInterface<ID3D11Texture2D>();
                     converter.CopyFrom(texture);
                     pending = hasFrame = true;
+                    refines = 0;
                 }
             }
             finally
@@ -116,12 +124,15 @@ sealed class DxgiVideo : IVideoCapture
 
         // Не чаще, чем просили; последнее изменение не теряется — уйдёт, как только подойдёт очередь.
         // Ключевой кадр по просьбе телефона — сразу, даже если экран не менялся.
-        var due = DateTime.UtcNow.Ticks - lastFrameAt >= minFrameTicks;
-        if (!hasFrame || !(pending && due || keyWanted))
+        var since = DateTime.UtcNow.Ticks - lastFrameAt;
+        var refine = !pending && refines < MaxRefines && since >= RefineAfterTicks;
+        if (!hasFrame || !(pending && since >= minFrameTicks || keyWanted || refine))
             return null;
+        var frame = pending || keyWanted ? converter.Convert() : converter.Frame;
+        if (!pending)
+            refines++;
         pending = false;
         lastFrameAt = DateTime.UtcNow.Ticks;
-        var frame = converter.Convert();
         if (keyWanted)
         {
             keyWanted = false;

@@ -163,9 +163,11 @@ class AgentConnection private constructor(
         enqueue(
             // Через интернет — меньше и сжатее: мобильный интернет и отдача домашнего роутера не выдержат 60 кадров Full HD.
             // Видео H.264 — если телефон умеет; иначе (или если ПК не сможет) агент шлёт картинки JPEG.
+            // Видео через интернет — в полном размере: уменьшенный и растянутый обратно текст не прочитать,
+            // а неподвижный экран агент дотягивает до чёткости повторами кадра.
             if (viaInternet) message(
-                "screen_start", "monitor" to monitor, "maxWidth" to minOf(maxWidth, 1280), "quality" to 50, "fps" to 30,
-                "codec" to codec, "bitrate" to 2_500_000,
+                "screen_start", "monitor" to monitor, "maxWidth" to if (video) maxWidth else minOf(maxWidth, 1280),
+                "quality" to 50, "fps" to 30, "codec" to codec, "bitrate" to 6_000_000,
             )
             else message(
                 "screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 60,

@@ -191,13 +191,20 @@
     <string name="home_wake">Включить</string>
     <string name="home_waking">Включается… %1$s</string>
     <string name="wake_done">«%1$s» включился</string>
+    <string name="wake_timeout_remote">«%1$s» не ответил за 2 минуты. Если вы не дома — это нормально: сигнал ушёл через интернет, а управлять компьютером пока можно только из домашней сети.</string>
     <string name="wake_timeout">«%1$s» не ответил за 2 минуты. Если он так и не включился — откройте «О ПК» → «Включение по сети» и проверьте настройки.</string>
     <string name="wake_no_network">Не удалось отправить сигнал: телефон не в сети. Включите Wi-Fi — тот же, что у компьютера.</string>
     <string name="wol_title">Включение по сети</string>
     <string name="wol_checking">Проверяем настройки на компьютере…</string>
     <string name="wol_ready">Windows готова: компьютер можно включать с телефона кнопкой «Включить» на главном экране, на виджете или в шторке.</string>
     <string name="wol_not_ready">Нужно кое-что настроить — откройте мастер на компьютере, он исправит сам.</string>
-    <string name="wol_how_to_test">Как проверить: выключите компьютер (Пуск → Завершение работы), подождите 10 секунд и нажмите «Включить» на главном экране. Телефон должен быть в той же сети Wi-Fi. Из интернета выключенный компьютер не включить — только из дома.</string>
+    <string name="wol_how_to_test">Как проверить: выключите компьютер (Пуск → Завершение работы), подождите 10 секунд и нажмите «Включить» на главном экране. Телефон должен быть в той же сети Wi-Fi. Чтобы включать ПК не из дома, ниже укажите адрес дома в интернете.</string>
+    <string name="wol_remote_title">Включение не из дома</string>
+    <string name="wol_remote_text">Адрес дома в интернете — имя динамического DNS (например, home.ddns.net) или постоянный IP. Кнопка «Включить» будет отправлять сигнал и сюда. На роутере нужны проброс UDP-порта 9 на этот компьютер и привязка его IP к MAC-адресу.</string>
+    <string name="wol_remote_hint">home.ddns.net</string>
+    <string name="wol_remote_save">Сохранить</string>
+    <string name="wol_remote_saved">Сохранено</string>
+    <string name="wol_remote_bad">Не похоже на адрес. Пример: home.ddns.net или 203.0.113.5</string>
     <string name="wol_open_wizard">Открыть мастер на ПК</string>
     <string name="wol_recheck">Проверить снова</string>
 

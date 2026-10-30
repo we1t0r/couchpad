@@ -23,6 +23,8 @@ data class SavedPc(
     val macs: List<MacInfo> = emptyList(),
     /** На компьютере отозвали доступ — нужно сопрячь заново. */
     val revoked: Boolean = false,
+    /** Адрес дома в интернете (имя DDNS или IP, можно с «:порт») — для включения ПК не из дома. */
+    val wakeHost: String = "",
 )
 
 /** Список компьютеров и идентификатор телефона. Хранится в настройках приложения. */
@@ -51,6 +53,8 @@ class PcStore(private val settings: Settings) {
     fun save(pc: SavedPc) = change { list -> listOf(pc) + list.filter { it.id != pc.id } }
 
     fun remove(id: String) = change { list -> list.filter { it.id != id } }
+
+    fun setWakeHost(id: String, host: String) = change { list -> list.map { if (it.id == id) it.copy(wakeHost = host.trim()) else it } }
 
     fun markRevoked(id: String) = change { list -> list.map { if (it.id == id) it.copy(revoked = true) else it } }
 

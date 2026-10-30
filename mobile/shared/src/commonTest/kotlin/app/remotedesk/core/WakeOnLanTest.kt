@@ -37,4 +37,15 @@ class WakeOnLanTest {
         assertTrue(WakeOnLan.canWake(pc))
         assertFalse(WakeOnLan.canWake(pc.copy(macs = emptyList())))
     }
+
+    @Test
+    fun internet_target_parses_name_ip_and_port() {
+        val pc = SavedPc("pc", "ПК", emptyList(), 47800, "fp", "t")
+        assertNull(WakeOnLan.internetTarget(pc))
+        assertEquals("home.ddns.net" to 9, WakeOnLan.internetTarget(pc.copy(wakeHost = " home.ddns.net ")))
+        assertEquals("203.0.113.5" to 4009, WakeOnLan.internetTarget(pc.copy(wakeHost = "203.0.113.5:4009")))
+        assertEquals("home.ddns.net" to 9, WakeOnLan.internetTarget(pc.copy(wakeHost = "http://home.ddns.net/")))
+        assertNull(WakeOnLan.internetTarget(pc.copy(wakeHost = "home.ddns.net:99999")))
+        assertNull(WakeOnLan.internetTarget(pc.copy(wakeHost = "home ddns")))
+    }
 }

@@ -60,6 +60,10 @@ import androidx.compose.ui.unit.dp
 import app.remotedesk.core.LinkState
 import app.remotedesk.core.Problem
 import app.remotedesk.core.SavedPc
+import app.remotedesk.core.WakeOnLan
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
 import app.remotedesk.resources.Res
 import app.remotedesk.resources.*
 import org.jetbrains.compose.resources.StringResource
@@ -173,6 +177,7 @@ class RemoteExtras(
     val storage: PhoneStorage,
     val clipHistory: List<String>,
     val addClip: (String) -> Unit,
+    val setWakeHost: (pcId: String, host: String) -> Unit,
 )
 
 private enum class Tab(val label: StringResource, val icon: String) {
@@ -218,7 +223,7 @@ private fun RemoteControl(
                 Tab.Info -> Column(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) { Connected(state, pc) }
+                ) { Connected(state, pc, extras.setWakeHost) }
             }
         }
         NavigationBar(windowInsets = WindowInsets(0)) {
@@ -247,7 +252,7 @@ private fun Connecting(state: LinkState.Connecting) {
 }
 
 @Composable
-private fun Connected(state: LinkState.Connected, pc: SavedPc?) {
+private fun Connected(state: LinkState.Connected, pc: SavedPc?, setWakeHost: (String, String) -> Unit) {
     val agent = state.connection.agent
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -286,6 +291,7 @@ private fun Connected(state: LinkState.Connected, pc: SavedPc?) {
     }
 
     WolCard(state.connection)
+    if (pc != null) RemoteWakeCard(pc, setWakeHost)
 
     Text(
         stringResource(Res.string.coming_soon),
@@ -341,6 +347,34 @@ private fun WolCard(connection: AgentConnection) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { connection.checkWol(openWizard = true) }) { Text(stringResource(Res.string.wol_open_wizard)) }
                 TextButton(onClick = { connection.checkWol() }) { Text(stringResource(Res.string.wol_recheck)) }
+            }
+        }
+    }
+}
+
+/** «Включение не из дома»: адрес дома в интернете, куда кнопка «Включить» тоже шлёт сигнал. */
+@Composable
+private fun RemoteWakeCard(pc: SavedPc, setWakeHost: (String, String) -> Unit) {
+    var text by remember(pc.id) { mutableStateOf(pc.wakeHost) }
+    val valid = text.isBlank() || WakeOnLan.internetTarget(pc.copy(wakeHost = text)) != null
+    val saved = text.trim() == pc.wakeHost
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(Res.string.wol_remote_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(Res.string.wol_remote_text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = { Text(stringResource(Res.string.wol_remote_hint)) },
+                singleLine = true,
+                isError = !valid,
+                supportingText = if (valid) null else ({ Text(stringResource(Res.string.wol_remote_bad)) }),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(onClick = { setWakeHost(pc.id, text) }, enabled = valid && !saved) {
+                Text(stringResource(if (saved && text.isNotBlank()) Res.string.wol_remote_saved else Res.string.wol_remote_save))
             }
         }
     }

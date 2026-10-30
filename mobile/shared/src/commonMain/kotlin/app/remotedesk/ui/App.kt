@@ -45,6 +45,7 @@ import app.remotedesk.core.WakeOnLan
 import app.remotedesk.resources.wake_done
 import app.remotedesk.resources.wake_no_network
 import app.remotedesk.resources.wake_timeout
+import app.remotedesk.resources.wake_timeout_remote
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -89,7 +90,7 @@ fun App(
         val transfers = remember { Transfers(scope, storage) }
         val clipHistory by remoteSettings.clipHistory.collectAsState()
         val shares by incomingShares.collectAsState()
-        val extras = RemoteExtras(device.id, transfers, storage, clipHistory, remoteSettings::addClip)
+        val extras = RemoteExtras(device.id, transfers, storage, clipHistory, remoteSettings::addClip, store::setWakeHost)
         val pcs by store.pcs.collectAsState()
         val found by discovery.found.collectAsState()
         val link by controller.state.collectAsState()
@@ -135,7 +136,8 @@ fun App(
                 } finally {
                     waking = waking - pc.id
                 }
-                snackbar.showSnackbar(getString(if (woke) Res.string.wake_done else Res.string.wake_timeout, pc.name))
+                val timeout = if (WakeOnLan.internetTarget(pc) != null) Res.string.wake_timeout_remote else Res.string.wake_timeout
+                snackbar.showSnackbar(getString(if (woke) Res.string.wake_done else timeout, pc.name))
             }
         }
 

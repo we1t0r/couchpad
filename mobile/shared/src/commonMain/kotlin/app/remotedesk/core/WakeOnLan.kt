@@ -24,11 +24,23 @@ internal expect suspend fun sendUdp(packet: ByteArray, hosts: List<String>, port
 
 /**
  * Wake-on-LAN: «магический пакет» — 6 байт 0xFF и 16 раз MAC-адрес. Сетевая карта выключенного ПК
- * узнаёт в нём свой адрес и включает компьютер. Пакет широковещательный, поэтому работает только
- * в той же сети, что и ПК (дома).
+ * узнаёт в нём свой адрес и включает компьютер. Широковещательный пакет доходит только в той же
+ * сети, что и ПК (дома). Не из дома пакет уходит на адрес дома в интернете ([SavedPc.wakeHost]),
+ * а роутер пересылает его на ПК (проброс UDP-порта и привязка IP к MAC на роутере).
  */
 object WakeOnLan {
     private val PORTS = listOf(9, 7)
+    const val INTERNET_PORT = 9
+
+    /** Адрес дома и порт из [SavedPc.wakeHost]: «name.ddns.net», «1.2.3.4» или с «:порт». */
+    fun internetTarget(pc: SavedPc): Pair<String, Int>? {
+        val text = pc.wakeHost.trim().removePrefix("http://").removePrefix("https://").trimEnd('/')
+        if (text.isEmpty() || text.any { it.isWhitespace() }) return null
+        val port = text.substringAfterLast(':', "").takeIf { ':' in text }?.toIntOrNull()
+        if (port != null && port !in 1..65535) return null
+        val host = if (port != null) text.substringBeforeLast(':') else text
+        return host.takeIf { it.isNotEmpty() && ':' !in it }?.let { it to (port ?: INTERNET_PORT) }
+    }
 
     fun parseMac(text: String): ByteArray? {
         val hex = text.filter { it.isLetterOrDigit() }
@@ -61,10 +73,14 @@ object WakeOnLan {
     suspend fun wake(pc: SavedPc, repeats: Int = 3): Int {
         val packets = pc.macs.sortedByDescending { it.wired }.mapNotNull { parseMac(it.mac) }.distinctBy { it.toList() }.map(::magicPacket)
         val hosts = targets(pc)
+        val internet = internetTarget(pc)
         var sent = 0
         repeat(repeats) { attempt ->
             if (attempt > 0) delay(150)
-            packets.forEach { sent += sendUdp(it, hosts, PORTS) }
+            packets.forEach {
+                sent += sendUdp(it, hosts, PORTS)
+                if (internet != null) sent += sendUdp(it, listOf(internet.first), listOf(internet.second))
+            }
         }
         return sent
     }

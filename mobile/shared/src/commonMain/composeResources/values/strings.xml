@@ -191,13 +191,20 @@
     <string name="home_wake">Turn on</string>
     <string name="home_waking">Turning on… %1$s</string>
     <string name="wake_done">“%1$s” is on</string>
+    <string name="wake_timeout_remote">“%1$s” didn’t answer within 2 minutes. If you’re away, that’s expected: the signal went over the internet, but the PC can be controlled only from your home network for now.</string>
     <string name="wake_timeout">“%1$s” didn’t answer within 2 minutes. If it never turned on, open “About PC” → “Wake-on-LAN” and check the settings.</string>
     <string name="wake_no_network">Couldn’t send the signal: the phone is offline. Turn on Wi-Fi — the same network as the computer.</string>
     <string name="wol_title">Wake-on-LAN</string>
     <string name="wol_checking">Checking settings on the computer…</string>
     <string name="wol_ready">Windows is ready: you can turn the computer on from the phone with the “Turn on” button on the home screen, the widget or the quick settings.</string>
     <string name="wol_not_ready">Something needs to be set up — open the wizard on the computer, it fixes things itself.</string>
-    <string name="wol_how_to_test">How to test: shut the computer down (Start → Shut down), wait 10 seconds and tap “Turn on” on the home screen. The phone must be on the same Wi-Fi. A computer that is off can’t be turned on over the internet — only from home.</string>
+    <string name="wol_how_to_test">How to test: shut the computer down (Start → Shut down), wait 10 seconds and tap “Turn on” on the home screen. The phone must be on the same Wi-Fi. To turn the PC on when you’re away, enter your home internet address below.</string>
+    <string name="wol_remote_title">Turn on when away</string>
+    <string name="wol_remote_text">Your home internet address — a dynamic DNS name (for example home.ddns.net) or a static IP. “Turn on” will send the signal there too. The router needs UDP port 9 forwarded to this computer and its IP bound to its MAC address.</string>
+    <string name="wol_remote_hint">home.ddns.net</string>
+    <string name="wol_remote_save">Save</string>
+    <string name="wol_remote_saved">Saved</string>
+    <string name="wol_remote_bad">Doesn’t look like an address. Example: home.ddns.net or 203.0.113.5</string>
     <string name="wol_open_wizard">Open wizard on PC</string>
     <string name="wol_recheck">Check again</string>
 

@@ -85,7 +85,14 @@ sealed class SharesForm : Form
         Reload();
     }
 
-    bool loading;
+    // Пока окно открывается, список шлёт ItemChecked для уже отмеченных папок — с ещё не вставленными строками.
+    bool loading = true;
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        loading = false;
+    }
 
     void Reload()
     {
@@ -99,7 +106,7 @@ sealed class SharesForm : Form
             list.Items.Add(item);
         }
         list.EndUpdate();
-        loading = false;
+        loading = !Visible;
     }
 
     void Save()
@@ -108,7 +115,7 @@ sealed class SharesForm : Form
             return;
         folders = folders.Select(f =>
         {
-            var item = list.Items.Cast<ListViewItem>().FirstOrDefault(i => (string)i.Tag! == f.Id);
+            var item = list.Items.OfType<ListViewItem>().FirstOrDefault(i => i.Tag as string == f.Id);
             return item is null ? f : f with { Writable = item.Checked };
         }).ToList();
         shares.Update(folders, whole.Checked, wholeWritable.Checked);

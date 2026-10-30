@@ -254,8 +254,11 @@ fun KeyboardPanel(
                         row.forEach { k -> KeyButton(k.label, k.icon, Modifier.weight(k.weight)) { press(k.key) } }
                     }
                 }
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (1..12).forEach { n -> KeyButton("F$n", null, Modifier.width(52.dp)) { press("f$n") } }
+                // F1–F12 — двумя рядами по шесть: все видны сразу, без прокрутки вбок.
+                listOf(1..6, 7..12).forEach { keys ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        keys.forEach { n -> KeyButton("F$n", null, Modifier.weight(1f)) { press("f$n") } }
+                    }
                 }
             }
         }

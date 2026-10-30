@@ -203,6 +203,8 @@
     <string name="wol_remote_title">When away from home</string>
     <string name="wol_remote_text">Your home internet address — a dynamic DNS name (for example home.ddns.net) or a static IP. The phone uses it to reach this computer over mobile data — touchpad, files, screen — and to turn it on. On the router, forward TCP port %1$s (connection) and UDP port 9 (turning on) to this computer, and bind its IP to its MAC address.</string>
     <string name="via_internet">over the internet</string>
+    <string name="problem_away_no_address">Away from home? You can connect over mobile data once you add your home internet address: connect at home and open “About PC” → “When away from home”.</string>
+    <string name="problem_away_address">Away from home, the phone also tried %1$s. If everything at home is on, your provider may have given the router a private address (on the router’s page WAN starts with 10., 100. or 172.): reconnect the internet on the router or ask your provider for a static public IP.</string>
     <string name="wol_remote_hint">home.ddns.net</string>
     <string name="wol_remote_save">Save</string>
     <string name="wol_remote_saved">Saved</string>

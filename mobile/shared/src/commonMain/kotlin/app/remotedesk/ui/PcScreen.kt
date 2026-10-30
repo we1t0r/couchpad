@@ -89,6 +89,7 @@ import app.remotedesk.core.LinkState
 import app.remotedesk.core.Problem
 import app.remotedesk.core.SavedPc
 import app.remotedesk.core.WakeOnLan
+import app.remotedesk.core.internetHost
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
@@ -142,6 +143,7 @@ fun PcScreen(
                                 Box(Modifier.size(8.dp).background(Green, CircleShape))
                                 Spacer(Modifier.width(6.dp))
                                 Text(
+                                    (if (state.connection.viaInternet) stringResource(Res.string.via_internet) + " · " else "") +
                                     state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.connected),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -186,7 +188,7 @@ fun PcScreen(
             ) {
                 when (state) {
                     is LinkState.Connecting -> Connecting(state)
-                    is LinkState.Failed -> Failed(state, canRetry = pc != null && !pc.revoked, onRetry = { pc?.let { onRetry(it.id) } }, onRescan = onRescan)
+                    is LinkState.Failed -> Failed(state, canRetry = pc != null && !pc.revoked, onRetry = { pc?.let { onRetry(it.id) } }, onRescan = onRescan, homeAddress = pc?.internetHost)
                     else -> Unit
                 }
             }
@@ -459,7 +461,7 @@ private fun Field(label: String, value: String) {
 }
 
 @Composable
-private fun Failed(state: LinkState.Failed, canRetry: Boolean, onRetry: () -> Unit, onRescan: () -> Unit) {
+private fun Failed(state: LinkState.Failed, canRetry: Boolean, onRetry: () -> Unit, onRescan: () -> Unit, homeAddress: String?) {
     val (title, text) = problemText(state.problem)
     var details by remember { mutableStateOf(false) }
     val needsQr = state.problem in setOf(Problem.Revoked, Problem.WrongPc, Problem.BadCode, Problem.CodeExpired, Problem.TooManyAttempts)
@@ -468,6 +470,10 @@ private fun Failed(state: LinkState.Failed, canRetry: Boolean, onRetry: () -> Un
     IconBadge(Icons.Default.WifiOff, MaterialTheme.colorScheme.onErrorContainer, MaterialTheme.colorScheme.errorContainer, 72.dp)
     Text(stringResource(title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
     Text(stringResource(text), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // Не дома: подсказать, как подключаться через интернет, или почему адрес дома мог перестать работать.
+    if (state.problem == Problem.Unreachable || state.problem == Problem.Timeout) {
+        Hint(if (homeAddress == null) stringResource(Res.string.problem_away_no_address) else stringResource(Res.string.problem_away_address, homeAddress))
+    }
     Spacer(Modifier.height(4.dp))
 
     val retry: @Composable () -> Unit = {

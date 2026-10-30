@@ -38,9 +38,14 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.components.resources)
             implementation(libs.material.icons.core)
+            implementation(libs.material.icons.extended)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
+        }
+        getByName("jvmTest").dependencies {
+            // Снимки экранов приложения без телефона (ScreenshotTest).
+            implementation(compose.desktop.currentOs)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -76,5 +81,7 @@ compose.resources {
 tasks.named<Test>("jvmTest") {
     val agent = rootProject.projectDir.resolve("../agent/src/RemoteDesk.Agent/bin/Debug/net10.0-windows/RemoteDesk.exe")
     systemProperty("rdesk.agentExe", agent.canonicalPath)
+    // -Pshots=папка — куда ScreenshotTest сохранит снимки экранов; без него тест пропускается.
+    systemProperty("rdesk.shots", (findProperty("shots") ?: "").toString())
     testLogging { events("passed", "skipped", "failed"); showStandardStreams = true }
 }

@@ -15,6 +15,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DesktopWindows
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -136,6 +155,8 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                     value = filter,
                     onValueChange = { filter = it },
                     placeholder = { Text(stringResource(Res.string.files_search)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    shape = MaterialTheme.shapes.large,
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -146,8 +167,16 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                         scope.launch {
                             storage.pickFiles().forEach { transfers.upload(files, r.id, path, it) }
                         }
-                    }) { Text("⬆  " + stringResource(Res.string.files_upload)) }
-                    OutlinedButton(onClick = { dialog = FileDialog.NewFolder }) { Text(stringResource(Res.string.files_new_folder)) }
+                    }) {
+                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(Res.string.files_upload))
+                    }
+                    OutlinedButton(onClick = { dialog = FileDialog.NewFolder }) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(Res.string.files_new_folder))
+                    }
                 }
             } else {
                 Text(
@@ -174,7 +203,7 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                                 Modifier.fillMaxWidth().clickable { root = item; path = "" }.padding(16.dp, 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("📁", style = MaterialTheme.typography.titleLarge)
+                                IconBadge(Icons.Default.Folder, size = 40.dp)
                                 Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(item.name, style = MaterialTheme.typography.bodyLarge)
@@ -215,7 +244,8 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                                 }.padding(16.dp, 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(if (e.dir) "📁" else fileIcon(e.name), style = MaterialTheme.typography.titleLarge)
+                                if (e.dir) IconBadge(Icons.Default.Folder, size = 40.dp)
+                                else IconBadge(fileIcon(e.name), MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceContainerHigh, 40.dp)
                                 Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(e.name, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -224,7 +254,7 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                                     }
                                 }
                                 if (e.dir && r.writable) {
-                                    TextButton(onClick = { dialog = FileDialog.Actions(e) }) { Text("⋯") }
+                                    IconButton(onClick = { dialog = FileDialog.Actions(e) }) { Icon(Icons.Default.MoreVert, contentDescription = null) }
                                 }
                             }
                         }
@@ -248,11 +278,11 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                 text = {
                     Column {
                         if (!e.dir) {
-                            ActionRow("⬇  " + stringResource(Res.string.files_download)) {
+                            ActionRow(Icons.Default.Download, stringResource(Res.string.files_download)) {
                                 dialog = null
                                 transfers.download(files, current!!.id, p, e.name, e.size)
                             }
-                            ActionRow("🖥  " + stringResource(Res.string.files_open_pc)) {
+                            ActionRow(Icons.Default.DesktopWindows, stringResource(Res.string.files_open_pc)) {
                                 dialog = null
                                 act {
                                     files.openOnPc(current!!.id, p)
@@ -261,8 +291,8 @@ fun FilesPanel(files: AgentFiles, transfers: Transfers, storage: PhoneStorage, n
                             }
                         }
                         if (current?.writable == true) {
-                            ActionRow("✎  " + stringResource(Res.string.files_rename)) { dialog = FileDialog.Rename(e) }
-                            ActionRow("🗑  " + stringResource(Res.string.files_delete)) { dialog = FileDialog.Delete(e) }
+                            ActionRow(Icons.Default.Edit, stringResource(Res.string.files_rename)) { dialog = FileDialog.Rename(e) }
+                            ActionRow(Icons.Default.Delete, stringResource(Res.string.files_delete)) { dialog = FileDialog.Delete(e) }
                         }
                     }
                 },
@@ -306,8 +336,12 @@ private fun Loading() {
 }
 
 @Composable
-private fun ActionRow(text: String, onClick: () -> Unit) {
-    Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp))
+private fun ActionRow(icon: ImageVector, text: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(16.dp))
+        Text(text, style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 @Composable
@@ -343,7 +377,8 @@ fun TransfersList(transfers: Transfers, storage: PhoneStorage) {
 private fun TransferRow(t: Transfer, transfers: Transfers) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (t.upload) "⬆" else "⬇", modifier = Modifier.width(22.dp))
+            Icon(if (t.upload) Icons.Default.Upload else Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
             Text(t.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Text(
                 when (t.state) {
@@ -375,16 +410,15 @@ private fun TransferRow(t: Transfer, transfers: Transfers) {
     }
 }
 
-private fun fileIcon(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
-    "jpg", "jpeg", "png", "gif", "webp", "heic", "bmp" -> "🖼"
-    "mp4", "mkv", "avi", "mov", "webm" -> "🎬"
-    "mp3", "flac", "wav", "ogg", "m4a" -> "🎵"
-    "pdf" -> "📕"
-    "zip", "rar", "7z", "tar", "gz" -> "🗜"
-    "exe", "msi", "apk" -> "⚙"
-    "txt", "md", "log", "doc", "docx", "odt", "rtf" -> "📄"
-    "xls", "xlsx", "csv", "ods" -> "📊"
-    else -> "📄"
+private fun fileIcon(name: String): ImageVector = when (name.substringAfterLast('.', "").lowercase()) {
+    "jpg", "jpeg", "png", "gif", "webp", "heic", "bmp" -> Icons.Default.Image
+    "mp4", "mkv", "avi", "mov", "webm" -> Icons.Default.Movie
+    "mp3", "flac", "wav", "ogg", "m4a" -> Icons.Default.MusicNote
+    "pdf" -> Icons.Default.PictureAsPdf
+    "zip", "rar", "7z", "tar", "gz" -> Icons.Default.FolderZip
+    "exe", "msi", "apk" -> Icons.Default.Apps
+    "xls", "xlsx", "csv", "ods" -> Icons.Default.TableChart
+    else -> Icons.Default.Description
 }
 
 fun formatSize(bytes: Long): String {

@@ -4,9 +4,9 @@
     <string name="home_scan">Сканировать QR-код</string>
     <string name="home_paste">Ввести ссылку вручную</string>
     <string name="home_empty_title">Подключим компьютер</string>
-    <string name="home_empty_step1">1. Установите RemoteDesk на компьютер с Windows и запустите.</string>
-    <string name="home_empty_step2">2. На компьютере откроется окно с QR-кодом. Если не открылось — нажмите на значок RemoteDesk возле часов → «Подключить телефон…».</string>
-    <string name="home_empty_step3">3. Нажмите «Сканировать QR-код» и наведите камеру на экран. Телефон и компьютер должны быть в одной сети (в одном Wi-Fi).</string>
+    <string name="home_empty_step1">Установите RemoteDesk на компьютер с Windows и запустите.</string>
+    <string name="home_empty_step2">На компьютере откроется окно с QR-кодом. Если не открылось — нажмите на значок RemoteDesk возле часов → «Подключить телефон…».</string>
+    <string name="home_empty_step3">Нажмите «Сканировать QR-код» и наведите камеру на экран. Телефон и компьютер должны быть в одной сети (в одном Wi-Fi).</string>
     <string name="home_saved">Ваши компьютеры</string>
     <string name="home_found">Найдены в сети</string>
     <string name="home_found_hint">Ещё не подключён. Нажмите, чтобы узнать как.</string>
@@ -48,7 +48,6 @@
     <string name="info_mac">Адаптеры для включения по сети (Wake-on-LAN)</string>
     <string name="info_wired">проводной</string>
     <string name="info_wireless">беспроводной</string>
-    <string name="coming_soon">Кнопки питания и мониторов, файлы, буфер обмена и экран появятся в следующих версиях.</string>
     <string name="details">Технические подробности</string>
 
     <string name="problem_unreachable_title">Компьютер не отвечает</string>
@@ -75,9 +74,9 @@
     <string name="tab_touchpad">Тачпад</string>
     <string name="tab_keyboard">Клавиатура</string>
     <string name="tab_info">О ПК</string>
-    <string name="button_left">ЛКМ</string>
-    <string name="button_right">ПКМ</string>
-    <string name="button_middle">СКМ</string>
+    <string name="button_left">Левая</string>
+    <string name="button_right">Правая</string>
+    <string name="button_middle">Средняя</string>
     <string name="touchpad_hint">Водите пальцем — двигается курсор. Тап — щелчок, двумя пальцами — прокрутка, тап двумя — правая кнопка.</string>
     <string name="scroll_strip">Полоса прокрутки</string>
 
@@ -167,6 +166,8 @@
     <string name="pw_monitors_hint_any">Компьютер продолжит работать: музыка, загрузки и игры не прервутся. Мониторы проснутся от движения на тачпаде, мыши или клавиши на ПК.</string>
     <string name="pw_monitors_hint_app">Компьютер продолжит работать. Мониторы проснутся от кнопки «Включить мониторы» или клавиши на клавиатуре ПК. Если задеть мышь, экран коротко мигнёт и снова погаснет.</string>
     <string name="pw_later">Позже…</string>
+    <string name="pw_monitors">Мониторы</string>
+    <string name="pw_turn_on">Включить</string>
     <string name="pw_computer">Компьютер</string>
     <string name="pw_timer">Таймер</string>
     <string name="pw_note">За минуту до выключения, перезагрузки или сна на компьютере появится окно с кнопкой «Отменить».</string>

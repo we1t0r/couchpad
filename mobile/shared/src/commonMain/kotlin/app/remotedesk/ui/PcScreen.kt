@@ -2,12 +2,31 @@ package app.remotedesk.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.union
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Cable
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Mouse
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.SnackbarHost
@@ -38,7 +57,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -59,6 +77,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,6 +106,8 @@ fun PcScreen(
     onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     onOpenSettings: () -> Unit,
     extras: RemoteExtras,
+    /** Номер вкладки пульта при открытии (для снимков экрана в тестах). */
+    initialTab: Int = 0,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val title = pc?.name ?: when (state) {
@@ -108,13 +129,17 @@ fun PcScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(title, maxLines = 1)
+                        Text(title, maxLines = 1, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         if (state is LinkState.Connected) {
-                            Text(
-                                state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.connected),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Green,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(8.dp).background(Green, CircleShape))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.connected),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 },
@@ -146,7 +171,7 @@ fun PcScreen(
         },
     ) { padding ->
         if (state is LinkState.Connected) {
-            RemoteControl(state, pc, settings, onChangeSettings, snackbar, extras, Modifier.fillMaxSize().padding(padding))
+            RemoteControl(state, pc, settings, onChangeSettings, snackbar, extras, initialTab, Modifier.fillMaxSize().padding(padding))
         } else {
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -187,16 +212,15 @@ class RemoteExtras(
     val setWakeHost: (pcId: String, host: String) -> Unit,
 )
 
-private enum class Tab(val label: StringResource, val icon: String) {
-    Touchpad(Res.string.tab_touchpad, "🖱"),
-    Keyboard(Res.string.tab_keyboard, "⌨"),
-    Files(Res.string.tab_files, "📁"),
-    Power(Res.string.tab_power, "⏻"),
-    Info(Res.string.tab_info, "ℹ"),
+private enum class Tab(val label: StringResource, val icon: ImageVector) {
+    Touchpad(Res.string.tab_touchpad, Icons.Default.Mouse),
+    Keyboard(Res.string.tab_keyboard, Icons.Default.Keyboard),
+    Files(Res.string.tab_files, Icons.Default.Folder),
+    Power(Res.string.tab_power, Icons.Default.PowerSettingsNew),
+    Info(Res.string.tab_info, Icons.Default.Info),
 }
 
 /** Пульт: тачпад, клавиатура, файлы, питание и сведения о ПК — вкладками внизу. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RemoteControl(
     state: LinkState.Connected,
@@ -205,9 +229,10 @@ private fun RemoteControl(
     onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     snackbar: SnackbarHostState,
     extras: RemoteExtras,
+    initialTab: Int,
     modifier: Modifier,
 ) {
-    var tab by rememberSaveable { mutableStateOf(Tab.Touchpad) }
+    var tab by rememberSaveable { mutableStateOf(Tab.entries[initialTab]) }
     val input = state.connection.input
     KeepScreenOn(settings.keepScreenOn)
     // Ошибки агента (например, «гибернация выключена») — внизу экрана.
@@ -235,12 +260,12 @@ private fun RemoteControl(
             }
         }
         // Пока открыта клавиатура телефона, вкладки прячутся — полю ввода остаётся больше места.
-        if (!WindowInsets.isImeVisible) NavigationBar(windowInsets = WindowInsets(0)) {
+        if (WindowInsets.ime.getBottom(LocalDensity.current) == 0) NavigationBar(windowInsets = WindowInsets(0), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Tab.entries.forEach { t ->
                 NavigationBarItem(
                     selected = tab == t,
                     onClick = { tab = t },
-                    icon = { Text(t.icon, style = MaterialTheme.typography.titleLarge) },
+                    icon = { Icon(t.icon, contentDescription = null) },
                     label = { Text(stringResource(t.label)) },
                 )
             }
@@ -250,9 +275,12 @@ private fun RemoteControl(
 
 @Composable
 private fun Connecting(state: LinkState.Connecting) {
-    Row(Modifier.padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-        CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
-        Spacer(Modifier.width(16.dp))
+    Column(
+        Modifier.fillMaxWidth().padding(top = 96.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        CircularProgressIndicator(Modifier.size(48.dp), strokeWidth = 4.dp)
         Text(
             stringResource(if (state.pairing) Res.string.pairing else Res.string.connecting, state.name),
             style = MaterialTheme.typography.titleMedium,
@@ -263,50 +291,58 @@ private fun Connecting(state: LinkState.Connecting) {
 @Composable
 private fun Connected(state: LinkState.Connected, pc: SavedPc?, setWakeHost: (String, String) -> Unit) {
     val agent = state.connection.agent
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Green)
-                Spacer(Modifier.width(10.dp))
-                Text(stringResource(Res.string.connected), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            }
-            Text(
-                state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.ping_waiting),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                stringResource(Res.string.via, "${state.connection.host}:${pc?.port ?: ""}".trimEnd(':')),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(Res.string.info_title), style = MaterialTheme.typography.titleMedium)
-            Field(Res.string.info_os, agent.os)
-            Field(Res.string.info_agent, agent.version)
-            if (agent.macs.isNotEmpty()) {
-                val wired = stringResource(Res.string.info_wired)
-                val wireless = stringResource(Res.string.info_wireless)
-                Field(
-                    Res.string.info_mac,
-                    agent.macs.joinToString("\n") { mac -> "${mac.mac} · ${mac.name} (${if (mac.wired) wired else wireless})" },
-                    monospace = true,
-                )
+    Panel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Default.Computer)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(agent.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Green, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        stringResource(Res.string.connected) + " · " +
+                            (state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.ping_waiting)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 
+    SectionTitle(stringResource(Res.string.info_title))
+    Panel {
+        Field(stringResource(Res.string.info_os), agent.os)
+        Field(stringResource(Res.string.info_agent), agent.version)
+        Field(stringResource(Res.string.via, "").trimEnd(' ', ':'), "${state.connection.host}:${pc?.port ?: ""}".trimEnd(':'))
+        if (agent.macs.isNotEmpty()) {
+            val wired = stringResource(Res.string.info_wired)
+            val wireless = stringResource(Res.string.info_wireless)
+            Column {
+                Text(stringResource(Res.string.info_mac), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                agent.macs.forEach { mac ->
+                    Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (mac.wired) Icons.Default.Cable else Icons.Default.Wifi,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("${mac.name} (${if (mac.wired) wired else wireless})", style = MaterialTheme.typography.bodyLarge)
+                            Text(mac.mac, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    SectionTitle(stringResource(Res.string.wol_title))
     WolCard(state.connection)
     if (pc != null) RemoteWakeCard(pc, setWakeHost)
-
-    Text(
-        stringResource(Res.string.coming_soon),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 /** «Включение по сети»: что проверил агент и кнопка открыть мастер на экране ПК. */
@@ -315,48 +351,46 @@ private fun WolCard(connection: AgentConnection) {
     val status by connection.wolStatus.collectAsState()
     LaunchedEffect(connection) { connection.checkWol() }
 
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.wol_title), style = MaterialTheme.typography.titleMedium)
-            val s = status
-            if (s == null) {
+    Panel {
+        val s = status
+        if (s == null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(12.dp))
                 Text(stringResource(Res.string.wol_checking), style = MaterialTheme.typography.bodyMedium)
-            } else {
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (s.ready) IconBadge(Icons.Default.PowerSettingsNew, Green, Green.copy(alpha = 0.16f), 40.dp)
+                else IconBadge(Icons.Default.Build, MaterialTheme.colorScheme.onTertiaryContainer, MaterialTheme.colorScheme.tertiaryContainer, 40.dp)
+                Spacer(Modifier.width(12.dp))
                 Text(
                     stringResource(if (s.ready) Res.string.wol_ready else Res.string.wol_not_ready),
                     style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
                 )
-                s.items.forEach { item ->
-                    Row {
-                        Text(
-                            when (item.state) {
-                                "ok" -> "✓"
-                                "warning" -> "!"
-                                "problem" -> "✗"
-                                else -> "?"
-                            },
-                            color = when (item.state) {
-                                "ok" -> Green
-                                "problem", "warning" -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(22.dp),
-                        )
-                        Column {
-                            Text(item.title, style = MaterialTheme.typography.bodyMedium)
-                            item.hint?.let {
-                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
+            }
+            s.items.forEach { item ->
+                Row {
+                    val (icon, tint) = when (item.state) {
+                        "ok" -> Icons.Default.CheckCircle to Green
+                        "warning" -> Icons.Default.Warning to MaterialTheme.colorScheme.tertiary
+                        "problem" -> Icons.Default.Error to MaterialTheme.colorScheme.error
+                        else -> Icons.AutoMirrored.Filled.HelpOutline to MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text(item.title, style = MaterialTheme.typography.bodyMedium)
+                        item.hint?.let { Hint(it) }
                     }
                 }
-                Text(stringResource(Res.string.wol_how_to_test), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { connection.checkWol(openWizard = true) }) { Text(stringResource(Res.string.wol_open_wizard)) }
-                TextButton(onClick = { connection.checkWol() }) { Text(stringResource(Res.string.wol_recheck)) }
-            }
+            Hint(stringResource(Res.string.wol_how_to_test))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(onClick = { connection.checkWol(openWizard = true) }) { Text(stringResource(Res.string.wol_open_wizard)) }
+            TextButton(onClick = { connection.checkWol() }) { Text(stringResource(Res.string.wol_recheck)) }
         }
     }
 }
@@ -368,36 +402,39 @@ private fun RemoteWakeCard(pc: SavedPc, setWakeHost: (String, String) -> Unit) {
     val valid = text.isBlank() || WakeOnLan.internetTarget(pc.copy(wakeHost = text)) != null
     val saved = text.trim() == pc.wakeHost
 
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.wol_remote_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(Res.string.wol_remote_text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text(stringResource(Res.string.wol_remote_hint)) },
-                singleLine = true,
-                isError = !valid,
-                supportingText = if (valid) null else ({ Text(stringResource(Res.string.wol_remote_bad)) }),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Button(onClick = { setWakeHost(pc.id, text) }, enabled = valid && !saved) {
-                Text(stringResource(if (saved && text.isNotBlank()) Res.string.wol_remote_saved else Res.string.wol_remote_save))
+    Panel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Default.Public, size = 40.dp)
+            Spacer(Modifier.width(12.dp))
+            Text(stringResource(Res.string.wol_remote_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        }
+        Hint(stringResource(Res.string.wol_remote_text))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text(stringResource(Res.string.wol_remote_hint)) },
+            singleLine = true,
+            isError = !valid,
+            supportingText = if (valid) null else ({ Text(stringResource(Res.string.wol_remote_bad)) }),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(onClick = { setWakeHost(pc.id, text) }, enabled = valid && !saved) {
+            if (saved && text.isNotBlank()) {
+                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
             }
+            Text(stringResource(if (saved && text.isNotBlank()) Res.string.wol_remote_saved else Res.string.wol_remote_save))
         }
     }
 }
 
 @Composable
-private fun Field(label: StringResource, value: String, monospace: Boolean = false) {
+private fun Field(label: String, value: String) {
     Column {
-        Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            value.ifBlank { "—" },
-            style = MaterialTheme.typography.bodyLarge,
-            fontFamily = if (monospace) FontFamily.Monospace else null,
-        )
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value.ifBlank { "—" }, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -407,19 +444,29 @@ private fun Failed(state: LinkState.Failed, canRetry: Boolean, onRetry: () -> Un
     var details by remember { mutableStateOf(false) }
     val needsQr = state.problem in setOf(Problem.Revoked, Problem.WrongPc, Problem.BadCode, Problem.CodeExpired, Problem.TooManyAttempts)
 
-    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-        Spacer(Modifier.width(10.dp))
-        Text(stringResource(title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-    }
-    Text(stringResource(text), style = MaterialTheme.typography.bodyLarge)
+    Spacer(Modifier.height(24.dp))
+    IconBadge(Icons.Default.WifiOff, MaterialTheme.colorScheme.onErrorContainer, MaterialTheme.colorScheme.errorContainer, 72.dp)
+    Text(stringResource(title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+    Text(stringResource(text), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(4.dp))
 
+    val retry: @Composable () -> Unit = {
+        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(Res.string.action_retry))
+    }
+    val rescan: @Composable () -> Unit = {
+        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(Res.string.action_rescan))
+    }
+    val big = PaddingValues(vertical = 14.dp)
     if (canRetry && !needsQr) {
-        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.action_retry)) }
-        OutlinedButton(onClick = onRescan, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.action_rescan)) }
+        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth(), contentPadding = big) { retry() }
+        OutlinedButton(onClick = onRescan, modifier = Modifier.fillMaxWidth(), contentPadding = big) { rescan() }
     } else {
-        Button(onClick = onRescan, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.action_rescan)) }
-        if (canRetry) OutlinedButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.action_retry)) }
+        Button(onClick = onRescan, modifier = Modifier.fillMaxWidth(), contentPadding = big) { rescan() }
+        if (canRetry) OutlinedButton(onClick = onRetry, modifier = Modifier.fillMaxWidth(), contentPadding = big) { retry() }
     }
 
     // Для опытных: что именно сказал агент или сеть.

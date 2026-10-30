@@ -1,6 +1,5 @@
 package app.remotedesk.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -9,8 +8,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.remotedesk.core.ConnectionController
 import app.remotedesk.core.DeviceInfo
@@ -301,15 +297,3 @@ private suspend fun waitUntilAwake(pc: SavedPc, discovery: PcDiscovery, store: P
     return false
 }
 
-val Blue = Color(0xFF2563EB)
-val Green = Color(0xFF1D9E75)
-
-@Composable
-fun RemoteDeskTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) {
-        darkColorScheme(primary = Color(0xFF8AB4FF), onPrimary = Color(0xFF0B1F44), secondary = Color(0xFF6FD3B0))
-    } else {
-        lightColorScheme(primary = Blue, onPrimary = Color.White, secondary = Green)
-    }
-    MaterialTheme(colorScheme = colors, content = content)
-}

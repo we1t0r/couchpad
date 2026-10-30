@@ -14,6 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -93,19 +99,27 @@ private fun TouchSurface(input: RemoteInput, settings: TouchpadSettings, buzz: (
 
     Box(
         modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(20.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             .semantics { contentDescription = hint }
             .pointerInput(input) { with(gestures) { run(input, { current }, { currentBuzz() }) } },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            hint,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(32.dp),
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(40.dp)) {
+            Icon(
+                Icons.Default.TouchApp,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.size(40.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -319,8 +333,8 @@ private fun ScrollStrip(input: RemoteInput, settings: TouchpadSettings) {
         Modifier
             .width(44.dp)
             .fillMaxHeight()
-            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             .semantics { contentDescription = label }
             .pointerInput(input) {
                 awaitEachGesture {
@@ -336,7 +350,7 @@ private fun ScrollStrip(input: RemoteInput, settings: TouchpadSettings) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text("⇕", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Default.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -355,7 +369,7 @@ private fun MouseButtonPad(input: RemoteInput, button: MouseButton, buzz: () -> 
     val colors = MaterialTheme.colorScheme
     Box(
         modifier
-            .background(if (pressed) colors.primary else colors.secondaryContainer, RoundedCornerShape(16.dp))
+            .background(if (pressed) colors.primary else colors.surfaceContainerHigh, RoundedCornerShape(20.dp))
             .semantics { contentDescription = label }
             .pointerInput(input, button) {
                 awaitEachGesture {
@@ -377,6 +391,6 @@ private fun MouseButtonPad(input: RemoteInput, button: MouseButton, buzz: () -> 
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = if (pressed) colors.onPrimary else colors.onSecondaryContainer)
+        Text(label, style = MaterialTheme.typography.titleMedium, color = if (pressed) colors.onPrimary else colors.onSurface)
     }
 }

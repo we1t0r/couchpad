@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,35 +17,34 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import app.remotedesk.core.WakeOnLan
-import app.remotedesk.resources.home_wake
-import app.remotedesk.resources.home_waking
-import app.remotedesk.resources.settings_title
-import kotlinx.coroutines.delay
-import kotlin.time.TimeMark
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.remotedesk.core.FoundPc
 import app.remotedesk.core.SavedPc
+import app.remotedesk.core.WakeOnLan
 import app.remotedesk.resources.Res
 import app.remotedesk.resources.app_title
 import app.remotedesk.resources.home_empty_step1
@@ -65,8 +64,13 @@ import app.remotedesk.resources.home_found_hint
 import app.remotedesk.resources.home_paste
 import app.remotedesk.resources.home_saved
 import app.remotedesk.resources.home_scan
+import app.remotedesk.resources.home_wake
+import app.remotedesk.resources.home_waking
 import app.remotedesk.resources.pc_online
 import app.remotedesk.resources.pc_revoked
+import app.remotedesk.resources.settings_title
+import kotlinx.coroutines.delay
+import kotlin.time.TimeMark
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,22 +94,28 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.app_title)) },
+                title = { Text(stringResource(Res.string.app_title), fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.settings_title))
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = { Column(Modifier.navigationBarsPadding()) { bottom() } },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onScan,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(Res.string.home_scan)) },
-            )
+            // На пустом экране главная кнопка — внутри подсказки, второй не нужно.
+            if (pcs.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = onScan,
+                    icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+                    text = { Text(stringResource(Res.string.home_scan)) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
         },
     ) { padding ->
         LazyColumn(
@@ -113,18 +123,23 @@ fun HomeScreen(
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = padding.calculateTopPadding() + 8.dp,
+                top = padding.calculateTopPadding() + 4.dp,
                 bottom = padding.calculateBottomPadding() + 96.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (pcs.isEmpty()) {
-                item { EmptyHint() }
+                item { EmptyHint(onScan, onPaste) }
             } else {
                 item { SectionTitle(stringResource(Res.string.home_saved)) }
                 items(pcs, key = { it.id }) { pc ->
                     val online = pc.id in onlineIds
                     val wakingSince = waking[pc.id]
+                    val status = when {
+                        pc.revoked -> MaterialTheme.colorScheme.error
+                        online -> Green
+                        else -> MaterialTheme.colorScheme.outline
+                    }
                     PcCard(
                         name = pc.name,
                         subtitle = when {
@@ -133,17 +148,23 @@ fun HomeScreen(
                             online -> stringResource(Res.string.pc_online)
                             else -> pc.hosts.firstOrNull().orEmpty()
                         },
-                        dot = when {
-                            pc.revoked -> MaterialTheme.colorScheme.error
-                            online -> Green
-                            else -> MaterialTheme.colorScheme.outlineVariant
-                        },
+                        status = status,
+                        active = online,
                         onClick = { onOpen(pc) },
                     ) {
                         when {
                             wakingSince != null -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                             !online && !pc.revoked && WakeOnLan.canWake(pc) ->
-                                FilledTonalButton(onClick = { onWake(pc) }) { Text("⏻  " + stringResource(Res.string.home_wake)) }
+                                FilledTonalButton(onClick = { onWake(pc) }, contentPadding = PaddingValues(horizontal = 14.dp)) {
+                                    Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(Res.string.home_wake))
+                                }
+                            else -> Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -151,60 +172,101 @@ fun HomeScreen(
             if (newOnes.isNotEmpty()) {
                 item { SectionTitle(stringResource(Res.string.home_found)) }
                 items(newOnes, key = { "found-" + it.id }) { pc ->
-                    OutlinedCard(onClick = { onFound(pc) }, modifier = Modifier.fillMaxWidth()) {
-                        PcRow(pc.name, stringResource(Res.string.home_found_hint), MaterialTheme.colorScheme.outline)
+                    Panel(onClick = { onFound(pc) }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconBadge(Icons.Default.Wifi, MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceContainerHigh)
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(pc.name, style = MaterialTheme.typography.titleMedium)
+                                Hint(stringResource(Res.string.home_found_hint))
+                            }
+                        }
                     }
                 }
             }
-            item {
-                TextButton(onClick = onPaste) { Text(stringResource(Res.string.home_paste)) }
+            if (pcs.isNotEmpty()) {
+                item {
+                    TextButton(onClick = onPaste) {
+                        Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(Res.string.home_paste))
+                    }
+                }
             }
         }
     }
 }
 
+/** Первый запуск: три шага с номерами и большая кнопка «Сканировать». */
 @Composable
-private fun EmptyHint() {
-    Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun EmptyHint(onScan: () -> Unit, onPaste: () -> Unit) {
+    Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        IconBadge(Icons.Default.Computer, size = 72.dp)
         Text(
             stringResource(Res.string.home_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        listOf(Res.string.home_empty_step1, Res.string.home_empty_step2, Res.string.home_empty_step3).forEach {
-            Text(stringResource(it), style = MaterialTheme.typography.bodyLarge)
+        Panel {
+            listOf(Res.string.home_empty_step1, Res.string.home_empty_step2, Res.string.home_empty_step3).forEachIndexed { i, step ->
+                Row {
+                    Box(
+                        Modifier.size(28.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "${i + 1}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Text(stringResource(step), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(top = 3.dp))
+                }
+            }
+        }
+        Button(onClick = onScan, modifier = Modifier.fillMaxWidth().padding(top = 4.dp), contentPadding = PaddingValues(vertical = 16.dp)) {
+            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(Res.string.home_scan), style = MaterialTheme.typography.titleMedium)
+        }
+        TextButton(onClick = onPaste, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(stringResource(Res.string.home_paste))
         }
     }
 }
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-    )
-}
-
-@Composable
-private fun PcCard(name: String, subtitle: String, dot: Color, onClick: () -> Unit, trailing: @Composable () -> Unit = {}) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        PcRow(name, subtitle, dot, trailing)
-    }
-}
-
-@Composable
-private fun PcRow(name: String, subtitle: String, dot: Color, trailing: @Composable () -> Unit = {}) {
-    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(12.dp).background(dot, CircleShape))
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(2.dp))
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun PcCard(
+    name: String,
+    subtitle: String,
+    status: Color,
+    active: Boolean,
+    onClick: () -> Unit,
+    trailing: @Composable () -> Unit,
+) {
+    Panel(onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box {
+                if (active) IconBadge(Icons.Default.Computer)
+                else IconBadge(Icons.Default.Computer, MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceContainerHigh)
+                // Точка состояния в углу значка.
+                Box(
+                    Modifier.align(Alignment.BottomEnd).size(14.dp)
+                        .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+                        .padding(2.5.dp)
+                        .background(status, CircleShape),
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+            }
+            Spacer(Modifier.width(8.dp))
+            trailing()
         }
-        trailing()
     }
 }
 

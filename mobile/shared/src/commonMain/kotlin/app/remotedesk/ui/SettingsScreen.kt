@@ -156,12 +156,7 @@ fun SettingsScreen(
 
 @Composable
 private fun Header(text: StringResource) {
-    Text(
-        stringResource(text),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+    SectionTitle(stringResource(text), Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
 }
 
 @Composable

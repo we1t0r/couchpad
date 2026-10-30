@@ -4,9 +4,9 @@
     <string name="home_scan">Scan QR code</string>
     <string name="home_paste">Enter link manually</string>
     <string name="home_empty_title">Let’s connect your computer</string>
-    <string name="home_empty_step1">1. Install RemoteDesk on your Windows computer and run it.</string>
-    <string name="home_empty_step2">2. A window with a QR code will open on the computer. If it didn’t, click the RemoteDesk icon next to the clock → “Connect phone…”.</string>
-    <string name="home_empty_step3">3. Tap “Scan QR code” and point the camera at the screen. The phone and the computer must be on the same network (the same Wi-Fi).</string>
+    <string name="home_empty_step1">Install RemoteDesk on your Windows computer and run it.</string>
+    <string name="home_empty_step2">A window with a QR code will open on the computer. If it didn’t, click the RemoteDesk icon next to the clock → “Connect phone…”.</string>
+    <string name="home_empty_step3">Tap “Scan QR code” and point the camera at the screen. The phone and the computer must be on the same network (the same Wi-Fi).</string>
     <string name="home_saved">Your computers</string>
     <string name="home_found">Found on the network</string>
     <string name="home_found_hint">Not connected yet. Tap to see how.</string>
@@ -48,7 +48,6 @@
     <string name="info_mac">Adapters for turning on over the network (Wake-on-LAN)</string>
     <string name="info_wired">wired</string>
     <string name="info_wireless">wireless</string>
-    <string name="coming_soon">Power and monitor buttons, files, clipboard and the screen are coming in the next versions.</string>
     <string name="details">Technical details</string>
 
     <string name="problem_unreachable_title">The computer is not responding</string>
@@ -167,6 +166,8 @@
     <string name="pw_monitors_hint_any">The computer keeps running: music, downloads and games are not interrupted. The monitors wake up on touchpad or mouse movement or a key press on the PC.</string>
     <string name="pw_monitors_hint_app">The computer keeps running. The monitors wake up with the “Turn on monitors” button or a key on the PC keyboard. If the mouse gets bumped, the screen briefly flashes and turns off again.</string>
     <string name="pw_later">Later…</string>
+    <string name="pw_monitors">Monitors</string>
+    <string name="pw_turn_on">Turn on</string>
     <string name="pw_computer">Computer</string>
     <string name="pw_timer">Timer</string>
     <string name="pw_note">A minute before shutting down, restarting or sleeping, a window with a Cancel button appears on the computer.</string>

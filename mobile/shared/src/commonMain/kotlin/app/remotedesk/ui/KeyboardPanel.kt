@@ -1,54 +1,79 @@
 package app.remotedesk.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SpaceBar
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material3.TextButton
+import androidx.compose.ui.unit.dp
 import app.remotedesk.core.AgentConnection
 import app.remotedesk.core.TextRelay
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 import app.remotedesk.core.TouchpadSettings
 import app.remotedesk.resources.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 /** Готовое сочетание клавиш с понятным названием. */
@@ -73,13 +98,22 @@ private val shortcuts = listOf(
 )
 
 private val media = listOf(
-    "⏮" to "prevtrack", "⏯" to "playpause", "⏭" to "nexttrack",
-    "🔇" to "volumemute", "🔉" to "volumedown", "🔊" to "volumeup",
+    Icons.Default.SkipPrevious to "prevtrack", Icons.Default.PlayArrow to "playpause", Icons.Default.SkipNext to "nexttrack",
+    Icons.AutoMirrored.Filled.VolumeOff to "volumemute", Icons.AutoMirrored.Filled.VolumeDown to "volumedown", Icons.AutoMirrored.Filled.VolumeUp to "volumeup",
 )
 
 private val modifierKeys = listOf("ctrl", "alt", "shift", "win")
 
-/** Клавиатура: ввод текста, спецклавиши, залипающие модификаторы, сочетания и медиа. */
+/** Клавиша на экране: подпись или значок. */
+private class Key(val label: String, val key: String, val icon: ImageVector? = null, val weight: Float = 1f)
+
+private val keyRows = listOf(
+    listOf(Key("Esc", "esc"), Key("Tab", "tab"), Key("Home", "home"), Key("↑", "up", Icons.Default.KeyboardArrowUp), Key("End", "end"), Key("PgUp", "pageup")),
+    listOf(Key("Del", "delete"), Key("⌫", "backspace", Icons.AutoMirrored.Filled.Backspace), Key("←", "left", Icons.Default.KeyboardArrowLeft), Key("↓", "down", Icons.Default.KeyboardArrowDown), Key("→", "right", Icons.Default.KeyboardArrowRight), Key("PgDn", "pagedown")),
+    listOf(Key("Ins", "insert"), Key("PrtSc", "printscreen"), Key("☰", "menu", Icons.Default.Menu), Key("Space", "space", Icons.Default.SpaceBar, 1.5f), Key("Enter", "enter", Icons.AutoMirrored.Filled.KeyboardReturn, 1.5f)),
+)
+
+/** Клавиатура: ввод текста, буфер обмена, спецклавиши, залипающие модификаторы, сочетания и медиа. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun KeyboardPanel(
@@ -142,7 +176,7 @@ fun KeyboardPanel(
     }
 
     Column(
-        modifier.verticalScroll(rememberScrollState()).padding(12.dp),
+        modifier.verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         OutlinedTextField(
@@ -160,7 +194,9 @@ fun KeyboardPanel(
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(Res.string.kb_field)) },
             placeholder = { Text(stringResource(Res.string.kb_field_hint)) },
+            leadingIcon = { Icon(Icons.Default.Keyboard, contentDescription = null) },
             singleLine = true,
+            shape = MaterialTheme.shapes.large,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = {
                 input.keys("enter")
@@ -176,109 +212,109 @@ fun KeyboardPanel(
                 }
             },
         )
-        Text(stringResource(Res.string.kb_field_explain), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Hint(stringResource(Res.string.kb_field_explain), Modifier.padding(horizontal = 4.dp))
 
-        Section(Res.string.kb_clipboard) {
+        SectionTitle(stringResource(Res.string.kb_keys))
+        Panel {
+            // Ctrl, Alt, Shift, Win — нажал, и они сработают вместе со следующей клавишей.
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("ctrl" to "Ctrl", "alt" to "Alt", "shift" to "Shift", "win" to "Win").forEach { (key, label) ->
+                    FilterChip(
+                        selected = key in latched,
+                        onClick = { latched = if (key in latched) latched - key else latched + key },
+                        label = { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            Hint(stringResource(Res.string.kb_modifiers))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                keyRows.forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        row.forEach { k -> KeyButton(k.label, k.icon, Modifier.weight(k.weight)) { press(k.key) } }
+                    }
+                }
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    (1..12).forEach { n -> KeyButton("F$n", null, Modifier.width(52.dp)) { press("f$n") } }
+                }
+            }
+        }
+
+        SectionTitle(stringResource(Res.string.kb_clipboard))
+        Panel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = { fromPc() }, modifier = Modifier.weight(1f)) { Text("⬇  " + stringResource(Res.string.clip_from_pc)) }
-                FilledTonalButton(onClick = { toPc(phoneClipboard.getText()?.text) }, modifier = Modifier.weight(1f)) {
-                    Text("⬆  " + stringResource(Res.string.clip_to_pc))
+                FilledTonalButton(onClick = { fromPc() }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp)) {
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(Res.string.clip_from_pc))
+                }
+                FilledTonalButton(
+                    onClick = { toPc(phoneClipboard.getText()?.text) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                ) {
+                    Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(Res.string.clip_to_pc))
                 }
             }
             if (clipHistory.isNotEmpty()) {
-                Text(stringResource(Res.string.clip_history), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Hint(stringResource(Res.string.clip_history))
                 clipHistory.forEach { item ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            item.replace('\n', ' '),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f).clickable {
+                        Row(
+                            Modifier.weight(1f).clickable {
                                 phoneClipboard.setText(AnnotatedString(item))
                                 scope.launch { notify(getString(Res.string.clip_copied)) }
-                            }.padding(vertical = 6.dp),
-                        )
-                        TextButton(onClick = { toPc(item) }) { Text("⬆") }
+                            }.padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text(item.replace('\n', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        IconButton(onClick = { toPc(item) }) {
+                            Icon(Icons.Default.Upload, contentDescription = stringResource(Res.string.clip_to_pc), tint = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
             }
         }
 
-        Section(Res.string.kb_modifiers) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("ctrl" to "Ctrl", "alt" to "Alt", "shift" to "Shift", "win" to "Win").forEach { (key, label) ->
-                    FilterChip(
-                        selected = key in latched,
-                        onClick = { latched = if (key in latched) latched - key else latched + key },
-                        label = { Text(label) },
-                    )
-                }
+        SectionTitle(stringResource(Res.string.kb_shortcuts))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            shortcuts.forEach { sc ->
+                AssistChip(
+                    onClick = {
+                        input.keys(sc.keys)
+                        buzz()
+                    },
+                    label = { Text(stringResource(sc.label)) },
+                    colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                )
             }
         }
 
-        Section(Res.string.kb_keys) {
-            KeyGrid(
-                listOf(
-                    listOf("Esc" to "esc", "Tab" to "tab", "Home" to "home", "↑" to "up", "End" to "end", "PgUp" to "pageup"),
-                    listOf("Del" to "delete", "⌫" to "backspace", "←" to "left", "↓" to "down", "→" to "right", "PgDn" to "pagedown"),
-                    listOf("Enter" to "enter", "Space" to "space", "Ins" to "insert", "PrtSc" to "printscreen", "☰" to "menu"),
-                ),
-                ::press,
-            )
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                (1..12).forEach { n -> KeyButton("F$n") { press("f$n") } }
-            }
-        }
-
-        Section(Res.string.kb_shortcuts) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                shortcuts.forEach { sc ->
-                    AssistChip(
-                        onClick = {
-                            input.keys(sc.keys)
-                            buzz()
-                        },
-                        label = { Text(stringResource(sc.label)) },
-                    )
-                }
-            }
-        }
-
-        Section(Res.string.kb_media) {
+        SectionTitle(stringResource(Res.string.kb_media))
+        Panel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                media.forEach { (label, key) ->
-                    FilledTonalButton(onClick = { press(key) }, modifier = Modifier.weight(1f)) { Text(label) }
-                }
+                media.forEach { (icon, key) -> KeyButton("", icon, Modifier.weight(1f)) { press(key) } }
             }
         }
     }
 }
 
 @Composable
-private fun Section(title: StringResource, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-        content()
-    }
-}
-
-@Composable
-private fun KeyGrid(rows: List<List<Pair<String, String>>>, onKey: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        rows.forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { (label, key) -> KeyButton(label, Modifier.weight(1f)) { onKey(key) } }
-            }
-        }
-    }
-}
-
-@Composable
-private fun KeyButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    FilledTonalButton(
+private fun KeyButton(label: String, icon: ImageVector?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
-    ) { Text(label, maxLines = 1) }
+        modifier = modifier.height(46.dp),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (icon != null) Icon(icon, contentDescription = label.ifEmpty { null }, modifier = Modifier.size(22.dp))
+            else Text(label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+        }
+    }
 }

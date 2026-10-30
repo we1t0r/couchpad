@@ -268,7 +268,7 @@ fun App(
                         OutlinedTextField(
                             value = text,
                             onValueChange = { text = it },
-                            placeholder = { Text("rdesk://pair?…") },
+                            placeholder = { Text("couchpad://pair?…") },
                             singleLine = true,
                             modifier = Modifier.padding(top = 12.dp),
                         )

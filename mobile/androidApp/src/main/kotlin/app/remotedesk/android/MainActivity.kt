@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
         handle(intent)
     }
 
-    /** Ссылка rdesk:// (сопряжение) или «Поделиться» из другого приложения. */
+    /** Ссылка couchpad:// (или прежняя rdesk://, сопряжение) или «Поделиться» из другого приложения. */
     private fun handle(intent: Intent?) {
         when (intent?.action) {
             Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {

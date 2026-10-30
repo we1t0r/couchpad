@@ -13,6 +13,7 @@ static class SignInSetup
 {
     const string FirewallRule = "Couchpad: вход в Windows";
 
+    // Сборка для разработки (не установленная) копирует себя сюда; установленная программа служит службе сама.
     static string InstallDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Couchpad");
     static string InstalledExe => Path.Combine(InstallDir, Path.GetFileName(Environment.ProcessPath!));
 
@@ -26,7 +27,7 @@ static class SignInSetup
     }
 
     /// <summary>Служба установлена из другой сборки агента — её нужно обновить.</summary>
-    public static bool IsOutdated => IsInstalled && Directory.EnumerateFiles(AppContext.BaseDirectory, "RemoteDesk*.dll").Any(file =>
+    public static bool IsOutdated => IsInstalled && !Installer.IsInstalledCopy && Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll").Any(file =>
     {
         var installed = Path.Combine(InstallDir, Path.GetFileName(file));
         return !File.Exists(installed) || File.GetLastWriteTimeUtc(installed) != File.GetLastWriteTimeUtc(file);
@@ -56,13 +57,19 @@ static class SignInSetup
     }
 
     /// <summary><c>--install-service</c> (уже с правами администратора).</summary>
-    public static int Install(string dataDir, int port)
+    public static int Install(string dataDir, int port, string? exe = null)
     {
         try
         {
             StopService();
-            CopyProgram();
-            var binPath = $"\"{InstalledExe}\" --service --data-dir \"{dataDir}\" --port {port}";
+            if (exe is null && Installer.IsInstalledCopy)
+                exe = Environment.ProcessPath!;
+            if (exe is null)
+            {
+                CopyProgram();
+                exe = InstalledExe;
+            }
+            var binPath = $"\"{exe}\" --service --data-dir \"{dataDir}\" --port {port}";
             if (IsInstalled)
                 Sc($"config {SignInService.Name} binPath= {ScQuote(binPath)} start= auto");
             else
@@ -71,7 +78,7 @@ static class SignInSetup
             // Упала — перезапустить через 5 секунд.
             Sc($"failure {SignInService.Name} reset= 86400 actions= restart/5000/restart/5000/restart/30000");
             Run("netsh", $"advfirewall firewall delete rule name=\"{FirewallRule}\"", check: false);
-            Run("netsh", $"advfirewall firewall add rule name=\"{FirewallRule}\" dir=in action=allow program=\"{InstalledExe}\" enable=yes profile=private");
+            Run("netsh", $"advfirewall firewall add rule name=\"{FirewallRule}\" dir=in action=allow program=\"{exe}\" enable=yes profile=private");
             Sc($"start {SignInService.Name}");
             return 0;
         }
@@ -83,7 +90,7 @@ static class SignInSetup
     }
 
     /// <summary><c>--uninstall-service</c> (уже с правами администратора).</summary>
-    public static int Uninstall()
+    public static int Uninstall(bool deleteProgram = true)
     {
         try
         {
@@ -91,7 +98,10 @@ static class SignInSetup
             if (IsInstalled)
                 Sc($"delete {SignInService.Name}");
             Run("netsh", $"advfirewall firewall delete rule name=\"{FirewallRule}\"", check: false);
-            for (var attempt = 0; attempt < 10 && Directory.Exists(InstallDir); attempt++)
+            // Копию для службы удаляем, только если это она, а не установленный Couchpad.
+            if (string.Equals(Installer.InstalledDir?.TrimEnd('\\'), InstallDir, StringComparison.OrdinalIgnoreCase))
+                deleteProgram = false;
+            for (var attempt = 0; deleteProgram && attempt < 10 && Directory.Exists(InstallDir); attempt++)
             {
                 try
                 {
@@ -111,7 +121,7 @@ static class SignInSetup
         }
     }
 
-    static void StopService()
+    public static void StopService()
     {
         if (!IsInstalled)
             return;
@@ -123,6 +133,10 @@ static class SignInSetup
                 break;
             Thread.Sleep(500);
         }
+        // Помощника служба закрывает сама. Добиваем копию для службы, только если она отдельная:
+        // у установленного Couchpad служба и агент пользователя запущены из одного файла.
+        if (Installer.IsInstalledCopy || Installer.InstalledDir is not null)
+            return;
         foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(InstalledExe)))
         {
             using (process)

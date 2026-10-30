@@ -19,6 +19,9 @@ static class SendToPhone
 
     static string PipeName(string dataDir) => "Couchpad.Agent." + InstanceId(dataDir);
 
+    /// <summary>Мьютекс «агент этого пользователя запущен» — по нему же служба входа уступает агенту порт.</summary>
+    public static string AgentMutex(string dataDir) => @"Local\Couchpad.Agent." + InstanceId(dataDir);
+
     /// <summary>Пункт меню для всех файлов. В Windows 11 он в «Показать дополнительные параметры».</summary>
     public static void Register()
     {
@@ -33,6 +36,18 @@ static class SendToPhone
         catch (Exception e) when (e is UnauthorizedAccessException or IOException or System.Security.SecurityException)
         {
             // Без пункта меню агент работает как обычно.
+        }
+    }
+
+    /// <summary>Удаление Couchpad: убрать пункт из меню Проводника.</summary>
+    public static void Unregister()
+    {
+        try
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(VerbKey, throwOnMissingSubKey: false);
+        }
+        catch (Exception e) when (e is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
         }
     }
 

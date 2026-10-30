@@ -27,7 +27,7 @@
     <string name="action_forget_confirm">Забыть</string>
 
     <string name="paste_title">Ссылка сопряжения</string>
-    <string name="paste_text">Для опытных: в QR-коде на компьютере зашита ссылка, начинающаяся с rdesk://pair. Её можно вставить сюда вместо сканирования.</string>
+    <string name="paste_text">Для опытных: в QR-коде на компьютере зашита ссылка, начинающаяся с couchpad://pair. Её можно вставить сюда вместо сканирования.</string>
     <string name="bad_link">Это не код Couchpad. Отсканируйте QR-код из окна «Подключить телефон» на компьютере.</string>
 
     <string name="confirm_title">Подключить компьютер?</string>

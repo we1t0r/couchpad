@@ -37,6 +37,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="couchpad" android:host="pair" />
                 <data android:scheme="rdesk" android:host="pair" />
             </intent-filter>
             <!-- «Поделиться» из любого приложения → отправить на компьютер. -->

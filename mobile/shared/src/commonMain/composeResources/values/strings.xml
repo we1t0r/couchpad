@@ -27,7 +27,7 @@
     <string name="action_forget_confirm">Forget</string>
 
     <string name="paste_title">Pairing link</string>
-    <string name="paste_text">For advanced users: the QR code on the computer contains a link that starts with rdesk://pair. You can paste it here instead of scanning.</string>
+    <string name="paste_text">For advanced users: the QR code on the computer contains a link that starts with couchpad://pair. You can paste it here instead of scanning.</string>
     <string name="bad_link">This is not a Couchpad code. Scan the QR code from the “Connect phone” window on the computer.</string>
 
     <string name="confirm_title">Connect a computer?</string>

@@ -3,7 +3,7 @@ using Makaretu.Dns;
 
 namespace RemoteDesk.Agent.Core;
 
-/// <summary>Объявляет агента в локальной сети как _rdesk._tcp, чтобы телефон нашёл его без ввода IP.</summary>
+/// <summary>Объявляет агента в локальной сети как _couchpad._tcp, чтобы телефон нашёл его без ввода IP.</summary>
 public sealed class MdnsAdvertiser : IDisposable
 {
     readonly ServiceDiscovery discovery;
@@ -12,7 +12,7 @@ public sealed class MdnsAdvertiser : IDisposable
     public MdnsAdvertiser(AgentIdentity identity, int port, IEnumerable<string> addresses)
     {
         profile = new ServiceProfile(
-            $"RemoteDesk-{identity.Id[..8]}",
+            $"Couchpad-{identity.Id[..8]}",
             Protocol.ServiceType,
             (ushort)port,
             addresses.Select(IPAddress.Parse));

@@ -22,7 +22,28 @@ public sealed record AgentOptions(
     public static readonly string[] SignInPermissions = ["input", "power", "screen"];
 
     public static string DefaultDataDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Couchpad");
+
+    /// <summary>
+    /// Папка данных прежних сборок (%APPDATA%\RemoteDesk) переезжает в новую: сопряжённые телефоны, сертификат
+    /// и настройки остаются. Если новая уже есть, старую не трогаем.
+    /// </summary>
+    public static void MoveLegacyDataDir()
+    {
+        var legacy = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
+        // Старая сборка только что закрылась (её закрывает установщик) — папка может быть ещё занята, ждём.
+        for (var attempt = 0; attempt < 20 && Directory.Exists(legacy) && !Directory.Exists(DefaultDataDir); attempt++)
+        {
+            try
+            {
+                Directory.Move(legacy, DefaultDataDir);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(250);
+            }
+        }
+    }
 }
 
 /// <summary>Собирает агента целиком: личность, список телефонов, сервер, объявление в сети.</summary>
@@ -96,7 +117,7 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     {
         var hosts = addresses ?? NetworkInfo.Addresses();
         var key = Secrets.Current.Key;
-        return $"rdesk://pair?v={Protocol.Version}&id={Identity.Id}&n={Uri.EscapeDataString(Identity.Name)}"
+        return $"couchpad://pair?v={Protocol.Version}&id={Identity.Id}&n={Uri.EscapeDataString(Identity.Name)}"
                + $"&h={string.Join(',', hosts)}&p={Server.Port}&fp={Identity.Fingerprint}&k={key}";
     }
 

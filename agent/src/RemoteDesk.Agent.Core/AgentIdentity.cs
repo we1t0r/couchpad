@@ -59,7 +59,7 @@ public sealed class AgentIdentity
     static byte[] CreateCertificate()
     {
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var request = new CertificateRequest("CN=RemoteDesk Agent", key, HashAlgorithmName.SHA256);
+        var request = new CertificateRequest("CN=Couchpad Agent", key, HashAlgorithmName.SHA256);
         request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
         request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension([new("1.3.6.1.5.5.7.3.1")], false));

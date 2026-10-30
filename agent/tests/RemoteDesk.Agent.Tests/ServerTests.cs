@@ -391,7 +391,7 @@ public sealed class ServerTests : IAsyncLifetime
         var link = new Uri(host.PairingLink(["192.168.0.10"]));
         var query = System.Web.HttpUtility.ParseQueryString(link.Query);
 
-        Assert.Equal("rdesk", link.Scheme);
+        Assert.Equal("couchpad", link.Scheme);
         Assert.Equal(host.Identity.Id, query["id"]);
         Assert.Equal("192.168.0.10", query["h"]);
         Assert.Equal(host.Server.Port.ToString(), query["p"]);

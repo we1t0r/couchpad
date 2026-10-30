@@ -14,6 +14,8 @@ class PairingLinkTest {
     fun parses_agent_link() {
         val link = PairingLink.parse(sample)!!
         assertEquals(1, link.version)
+        // Новая схема couchpad:// и прежняя rdesk:// понимаются одинаково.
+        assertEquals(link, PairingLink.parse(sample.replace("rdesk://", "couchpad://")))
         assertEquals("0123456789abcdef", link.agentId)
         assertEquals("Домашний ПК", link.name)
         assertEquals(listOf("192.168.0.102", "10.0.0.5"), link.hosts)

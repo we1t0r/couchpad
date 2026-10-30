@@ -2,7 +2,7 @@ package app.remotedesk.core
 
 /**
  * Содержимое QR-кода агента:
- * rdesk://pair?v=1&id=<agentId>&n=<имя ПК>&h=<ip1,ip2>&p=<порт>&fp=<отпечаток>&k=<ключ>
+ * couchpad://pair?v=1&id=<agentId>&n=<имя ПК>&h=<ip1,ip2>&p=<порт>&fp=<отпечаток>&k=<ключ>
  */
 data class PairingLink(
     val version: Int,
@@ -17,13 +17,14 @@ data class PairingLink(
     val isNewerProtocol: Boolean get() = version > Protocol.VERSION
 
     companion object {
-        private const val PREFIX = "rdesk://pair?"
+        // rdesk:// — от прежних сборок агента (до переименования в Couchpad).
+        private val PREFIXES = listOf("couchpad://pair?", "rdesk://pair?")
 
-        /** null — это не ссылка RemoteDesk или в ней чего-то не хватает. */
+        /** null — это не ссылка Couchpad или в ней чего-то не хватает. */
         fun parse(text: String?): PairingLink? {
             val trimmed = text?.trim() ?: return null
-            if (!trimmed.startsWith(PREFIX, ignoreCase = true)) return null
-            val query = trimmed.substring(PREFIX.length)
+            val prefix = PREFIXES.firstOrNull { trimmed.startsWith(it, ignoreCase = true) } ?: return null
+            val query = trimmed.substring(prefix.length)
                 .substringBefore('#')
                 .split('&')
                 .filter { it.isNotEmpty() }

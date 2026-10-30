@@ -5,41 +5,57 @@ namespace RemoteDesk.Agent;
 /// <summary>
 /// Запуск вместе с Windows: строка в HKCU\…\Run для текущего пользователя (без прав администратора).
 /// Агент стартует после входа в Windows. При первом запуске включается сам; если человек снимет
-/// галочку в меню, больше не включается.
+/// галочку в меню, больше не включается. Установщик решает за первый запуск сам (галочка в его окне).
 /// </summary>
 static class Autostart
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    const string ValueName = "RemoteDesk";
+    const string ValueName = "Couchpad";
+    const string LegacyName = "RemoteDesk";
 
-    static string Command => $"\"{Environment.ProcessPath}\"";
+    static string Command(string exe) => $"\"{exe}\"";
 
     public static bool IsEnabled
     {
         get
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKey);
-            return string.Equals(key?.GetValue(ValueName) as string, Command, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(key?.GetValue(ValueName) as string, Command(Environment.ProcessPath!), StringComparison.OrdinalIgnoreCase);
         }
     }
 
-    public static void Set(bool enabled)
+    public static void Set(bool enabled) => SetFor(Environment.ProcessPath!, enabled);
+
+    public static void SetFor(string exe, bool enabled)
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKey);
+        key.DeleteValue(LegacyName, throwOnMissingValue: false);
         if (enabled)
-            key.SetValue(ValueName, Command);
+            key.SetValue(ValueName, Command(exe));
         else
             key.DeleteValue(ValueName, throwOnMissingValue: false);
+    }
+
+    /// <summary>Удаление Couchpad: убрать и прежнюю строку от RemoteDesk.</summary>
+    public static void Remove()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
+        key?.DeleteValue(ValueName, throwOnMissingValue: false);
+        key?.DeleteValue(LegacyName, throwOnMissingValue: false);
     }
 
     /// <summary>Первый запуск — включить автозапуск. Отметка в папке данных: решение человека потом не трогаем.</summary>
     public static void EnableOnFirstRun(string dataDir)
     {
         var marker = Path.Combine(dataDir, "autostart-set");
-        if (File.Exists(marker))
-            return;
         try
         {
+            // Прежняя строка от RemoteDesk — переносим на новое имя.
+            using (var key = Registry.CurrentUser.OpenSubKey(RunKey))
+                if (key?.GetValue(LegacyName) is not null)
+                    Set(true);
+            if (File.Exists(marker))
+                return;
             Set(true);
             Directory.CreateDirectory(dataDir);
             File.WriteAllText(marker, "");

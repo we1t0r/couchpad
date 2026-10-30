@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -12,11 +13,24 @@ android {
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "app.remotedesk"
+        applicationId = "app.couchpad"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.9.0"
+    }
+
+    // Ключ подписи для раздачи — вне проекта: %USERPROFILE%\.couchpad\signing.properties (storeFile, storePassword,
+    // keyAlias, keyPassword). Его нельзя терять: без него приложение у людей не обновить поверх.
+    val signingFile = File(System.getProperty("user.home"), ".couchpad/signing.properties")
+    val signing = Properties().apply { if (signingFile.exists()) signingFile.inputStream().use(::load) }
+    signingConfigs {
+        if (signing.isNotEmpty()) create("release") {
+            storeFile = File(signing.getProperty("storeFile"))
+            storePassword = signing.getProperty("storePassword")
+            keyAlias = signing.getProperty("keyAlias")
+            keyPassword = signing.getProperty("keyPassword")
+        }
     }
 
     buildTypes {
@@ -24,9 +38,10 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 пока выключен: на телефоне сборку с ним ещё не проверяли, а Ktor и сериализация чувствительны к нему.
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

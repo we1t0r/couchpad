@@ -30,7 +30,7 @@ static class DesktopHelper
         var allowed = Sessions.Cached(() => !Sessions.HasUser(session) || Sessions.IsLocked(session));
         var input = new DesktopInput(desktop, new WindowsInput(), allowed);
         var screen = new DesktopScreen(desktop, new GdiScreen(), allowed);
-        var userAgent = @"Local\RemoteDesk.Agent." + SendToPhone.InstanceId(dataDir);
+        var userAgent = SendToPhone.AgentMutex(dataDir);
 
         using var stop = new CancellationTokenSource();
         var bridge = new DesktopBridgeServer(input, screen, allowed, () => CreatePipe(session),

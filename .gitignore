@@ -20,3 +20,6 @@ captures/
 # OS
 Thumbs.db
 .DS_Store
+
+# Раздача (tools\release.ps1)
+dist/

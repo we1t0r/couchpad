@@ -79,7 +79,7 @@ compose.resources {
 
 // Тест совместимости запускает собранный агент для Windows, если он есть.
 tasks.named<Test>("jvmTest") {
-    val agent = rootProject.projectDir.resolve("../agent/src/RemoteDesk.Agent/bin/Debug/net10.0-windows/RemoteDesk.exe")
+    val agent = rootProject.projectDir.resolve("../agent/src/RemoteDesk.Agent/bin/Debug/net10.0-windows/Couchpad.exe")
     systemProperty("rdesk.agentExe", agent.canonicalPath)
     // -Pshots=папка — куда ScreenshotTest сохранит снимки экранов; без него тест пропускается.
     systemProperty("rdesk.shots", (findProperty("shots") ?: "").toString())

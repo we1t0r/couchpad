@@ -7,7 +7,7 @@ static class Program
     /// <summary>
     /// Аргументы:
     ///   --pair            сразу открыть окно с QR-кодом;
-    ///   --data-dir путь   своя папка данных (по умолчанию %APPDATA%\RemoteDesk);
+    ///   --data-dir путь   своя папка данных (по умолчанию %APPDATA%\Couchpad, прежняя RemoteDesk переезжает сама);
     ///   --port N          свой порт (по умолчанию 47800);
     ///   --loopback        слушать только 127.0.0.1 и не объявляться в сети (для разработки);
     ///   --dev-link файл   записать ссылку сопряжения в файл (для автотестов приложения);
@@ -18,15 +18,30 @@ static class Program
     ///   --desktop-helper  помощник службы на экране входа (запускает служба);
     ///   --install-service / --uninstall-service  установить или удалить службу (с правами администратора).
     ///   --video-selftest файл  проверить кодировщик H.264 на ненастоящих кадрах.
+    ///   --setup (или имя файла Couchpad-Setup.exe)  окно установки; --uninstall  удаление.
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
         // Проверка кодировщика видео на ненастоящих кадрах — экран не снимается.
+        // Для разработки: перерисовать Couchpad.ico из AppIcon.
+        var iconIndex = Array.IndexOf(args, "--export-icon");
+        if (iconIndex >= 0 && iconIndex + 1 < args.Length)
+        {
+            AppIcon.WriteIco(args[iconIndex + 1]);
+            return 0;
+        }
+
         var selfTest = Array.IndexOf(args, "--video-selftest");
         if (selfTest >= 0 && selfTest + 1 < args.Length)
             return VideoSelfTest.Run(args[selfTest + 1]);
 
+        // Установка, обновление и удаление (Couchpad-Setup.exe, --uninstall и их части с правами администратора).
+        if (Installer.TryRun(args, out var setupCode))
+            return setupCode;
+
+        if (!args.Contains("--data-dir"))
+            AgentOptions.MoveLegacyDataDir();
         var options = ParseArgs(args);
 
         // Служба входа и её части: ни значка в трее, ни своего «единственного экземпляра».
@@ -46,7 +61,7 @@ static class Program
         string[] toSend = sendIndex >= 0 ? args[(sendIndex + 1)..] : [];
 
         // Один агент на пользователя: второй экземпляр отдаёт файлы для отправки первому и выходит.
-        using var mutex = new Mutex(true, @"Local\RemoteDesk.Agent." + SendToPhone.InstanceId(options.DataDir), out var first);
+        using var mutex = new Mutex(true, SendToPhone.AgentMutex(options.DataDir), out var first);
         if (!first)
         {
             if (toSend.Length > 0)

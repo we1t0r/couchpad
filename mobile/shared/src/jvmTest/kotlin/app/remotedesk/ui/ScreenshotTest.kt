@@ -70,8 +70,8 @@ class ScreenshotTest {
         withAgent { connection, paired ->
             for (dark in listOf(false, true)) {
                 val suffix = if (dark) "-dark" else ""
-                listOf("touchpad", "keyboard", "files", "power", "info").forEachIndexed { tab, name ->
-                    shot("pc-$name$suffix", dark, frames = if (name == "files" || name == "info") 40 else 8) {
+                listOf("touchpad", "screen", "keyboard", "files", "power", "info").forEachIndexed { tab, name ->
+                    shot("pc-$name$suffix", dark, frames = if (name in listOf("files", "info", "screen")) 40 else 8) {
                         PcScreen(LinkState.Connected(paired.id, connection, 16), paired, {}, {}, {}, {}, TouchpadSettings(), {}, {}, extras(), initialTab = tab)
                     }
                 }

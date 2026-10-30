@@ -21,7 +21,8 @@ public sealed record AgentServices(
     FileService Files,
     IClipboard Clipboard,
     Action<string> Recycle,
-    Outbox Outbox);
+    Outbox Outbox,
+    IScreenSource Screen);
 
 /// <summary>Сервер агента поверх TLS: wss://ip:port/ws для управления и https://ip:port/api/… для файлов.</summary>
 public sealed class AgentServer(
@@ -141,6 +142,15 @@ public sealed class AgentServer(
             if (session.DeviceId is not null)
                 ConnectionsChanged?.Invoke();
         }
+    }
+
+    /// <summary>Телефон начал (true) или перестал (false) смотреть экран: имя телефона. Человек за ПК должен об этом знать.</summary>
+    public event Action<string, bool>? ScreenWatching;
+
+    internal void OnScreenWatching(Session session, bool watching)
+    {
+        var name = Devices.All.FirstOrDefault(d => d.DeviceId == session.DeviceId)?.Name ?? "Телефон";
+        ScreenWatching?.Invoke(name, watching);
     }
 
     long nextPhoneRequest;
@@ -268,6 +278,7 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         {
             // Чтобы на ПК не «залип» Ctrl или зажатая кнопка мыши.
             input.ReleaseAll();
+            StopScreen();
         }
     }
 
@@ -333,6 +344,28 @@ internal sealed class Session(AgentServer server, WebSocket ws)
                 break;
             case "pf_r":
                 server.OnPhoneReply(msg);
+                break;
+            case "screen_start":
+                if (!permissions.Contains("screen"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Показ экрана выключен на компьютере"));
+                    break;
+                }
+                await StartScreenAsync(msg);
+                break;
+            case "screen_stop":
+                StopScreen();
+                break;
+            case "screen_ack":
+                screen?.Ack();
+                break;
+            case "pointer":
+                if (!permissions.Contains("input"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Управление мышью и клавиатурой выключено на компьютере"));
+                    break;
+                }
+                Pointer(msg);
                 break;
             case "wol_check":
             case "wol_setup":
@@ -441,6 +474,68 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         catch (Exception e)
         {
             await SendAsync(Message.Error(Protocol.Errors.PowerFailed, e.Message));
+        }
+    }
+
+    ScreenStream? screen;
+
+    async Task StartScreenAsync(System.Text.Json.Nodes.JsonObject msg)
+    {
+        StopScreen();
+        var source = server.Services.Screen;
+        var monitors = source.Monitors();
+        if (monitors.Count == 0)
+        {
+            await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Этот компьютер не умеет показывать экран"));
+            return;
+        }
+        var wanted = msg.Str("monitor");
+        var capture = source.Open(monitors.Any(m => m.Id == wanted) ? wanted : null);
+        screen = new ScreenStream(capture, SendBinaryAsync,
+            (int)(msg.Num("maxWidth") ?? 1600), (int)(msg.Num("quality") ?? 70), (int)(msg.Num("fps") ?? 30));
+        await SendAsync(Message.Build("screen_info",
+            ("monitor", capture.Monitor.Id),
+            ("monitors", monitors.Select(m => new { id = m.Id, name = m.Name, width = m.Width, height = m.Height, primary = m.Primary }).ToList())));
+        screen.Start();
+        server.OnScreenWatching(this, true);
+    }
+
+    void StopScreen()
+    {
+        if (screen is null)
+            return;
+        screen.Dispose();
+        screen = null;
+        server.OnScreenWatching(this, false);
+    }
+
+    /// <summary>Касание на картинке экрана: x и y от 0 до 1 внутри показанного монитора.</summary>
+    void Pointer(System.Text.Json.Nodes.JsonObject msg)
+    {
+        var monitor = screen?.Monitor
+            ?? server.Services.Screen.Monitors().FirstOrDefault(m => m.Id == msg.Str("monitor"));
+        if (monitor is null || msg.Dbl("x") is not { } x || msg.Dbl("y") is not { } y)
+            return;
+        var px = monitor.X + (int)Math.Round(Math.Clamp(x, 0, 1) * (monitor.Width - 1));
+        var py = monitor.Y + (int)Math.Round(Math.Clamp(y, 0, 1) * (monitor.Height - 1));
+        server.Input.MoveTo(px, py);
+    }
+
+    public async Task SendBinaryAsync(byte[] data)
+    {
+        if (ws.State != WebSocketState.Open)
+            return;
+        await sendLock.WaitAsync();
+        try
+        {
+            await ws.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None);
+        }
+        catch (Exception e) when (e is WebSocketException or IOException or ObjectDisposedException)
+        {
+        }
+        finally
+        {
+            sendLock.Release();
         }
     }
 

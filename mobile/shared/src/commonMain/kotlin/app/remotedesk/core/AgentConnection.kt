@@ -137,6 +137,32 @@ class AgentConnection private constructor(
         enqueue(JsonObject(fields + mapOf("t" to JsonPrimitive("pf_r"), "id" to JsonPrimitive(id))).toString())
     }
 
+    private val _screenInfo = MutableStateFlow<ScreenInfo?>(null)
+
+    /** Мониторы ПК и какой сейчас показывается (после [startScreen]). */
+    val screenInfo: StateFlow<ScreenInfo?> = _screenInfo.asStateFlow()
+
+    private val _screenFrame = MutableStateFlow<ScreenImage?>(null)
+
+    /** Последний кадр экрана. Старые не копятся: интерфейс рисует только свежий. */
+    val screenFrame: StateFlow<ScreenImage?> = _screenFrame.asStateFlow()
+
+    /** Показывать экран ПК: [monitor] — id монитора (null — основной), [maxWidth] — ширина кадра в пикселях. */
+    fun startScreen(monitor: String?, maxWidth: Int) =
+        enqueue(message("screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 30))
+
+    fun stopScreen() {
+        enqueue(message("screen_stop"))
+        _screenFrame.value = null
+    }
+
+    private fun onBinary(data: ByteArray) {
+        val image = ScreenImage.parse(data) ?: return
+        // Подтверждаем сразу: агент держит в пути не больше двух кадров, поэтому задержка не копится.
+        enqueue(message("screen_ack", "n" to image.number))
+        _screenFrame.value = image
+    }
+
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
@@ -166,6 +192,10 @@ class AgentConnection private constructor(
         var reason = AgentException(Problem.Closed)
         try {
             for (frame in session.incoming) {
+                if (frame is Frame.Binary) {
+                    onBinary(frame.data)
+                    continue
+                }
                 val msg = (frame as? Frame.Text)?.let { parseMessage(it.readText()) } ?: continue
                 when (msg.type) {
                     "pong" -> msg.num("n")?.let { pongs.emit(it) }
@@ -173,6 +203,7 @@ class AgentConnection private constructor(
                     "wol_status" -> _wolStatus.value = WolStatus.parse(msg)
                     "clip", "clip_done" -> clipReplies.emit(msg)
                     "pf" -> _phoneFileRequests.trySend(msg)
+                    "screen_info" -> _screenInfo.value = ScreenInfo.parse(msg)
                     "offer" -> PcOffer.parse(msg).takeIf { it.isNotEmpty() }?.let { _offers.trySend(it) }
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.foundation.background
@@ -121,13 +122,16 @@ fun PcScreen(
     var forgetting by remember { mutableStateOf(false) }
 
     BackHandler(onBack)
+    // «Во весь экран» на вкладке «Экран»: без шапки и вкладок.
+    var immersive by rememberSaveable { mutableStateOf(false) }
+    if (immersive) BackHandler { immersive = false }
 
     Scaffold(
         // Клавиатура телефона поднимает содержимое, чтобы поле ввода не пряталось под ней.
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
+            if (!immersive) TopAppBar(
                 title = {
                     Column {
                         Text(title, maxLines = 1, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -172,7 +176,7 @@ fun PcScreen(
         },
     ) { padding ->
         if (state is LinkState.Connected) {
-            RemoteControl(state, pc, settings, onChangeSettings, snackbar, extras, initialTab, Modifier.fillMaxSize().padding(padding))
+            RemoteControl(state, pc, settings, onChangeSettings, snackbar, extras, initialTab, immersive, { immersive = it }, Modifier.fillMaxSize().padding(padding))
         } else {
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -216,6 +220,7 @@ class RemoteExtras(
 
 private enum class Tab(val label: StringResource, val icon: ImageVector) {
     Touchpad(Res.string.tab_touchpad, Icons.Default.Mouse),
+    Screen(Res.string.tab_screen, Icons.AutoMirrored.Filled.ScreenShare),
     Keyboard(Res.string.tab_keyboard, Icons.Default.Keyboard),
     Files(Res.string.tab_files, Icons.Default.Folder),
     Power(Res.string.tab_power, Icons.Default.PowerSettingsNew),
@@ -232,9 +237,13 @@ private fun RemoteControl(
     snackbar: SnackbarHostState,
     extras: RemoteExtras,
     initialTab: Int,
+    immersive: Boolean,
+    onImmersive: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.entries[initialTab]) }
+    // Ушли с вкладки «Экран» — возвращаем шапку и вкладки.
+    LaunchedEffect(tab) { if (tab != Tab.Screen) onImmersive(false) }
     val input = state.connection.input
     KeepScreenOn(settings.keepScreenOn)
     // Ошибки агента (например, «гибернация выключена») — внизу экрана.
@@ -252,6 +261,7 @@ private fun RemoteControl(
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
+                Tab.Screen -> ScreenPanel(state.connection, settings, immersive, onImmersive, Modifier.fillMaxSize())
                 Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipboard, files, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize())
                 Tab.Files -> if (files != null) FilesPanel(files, extras.transfers, extras.storage, notify, Modifier.fillMaxSize())
                 Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())
@@ -262,13 +272,13 @@ private fun RemoteControl(
             }
         }
         // Пока открыта клавиатура телефона, вкладки прячутся — полю ввода остаётся больше места.
-        if (WindowInsets.ime.getBottom(LocalDensity.current) == 0) NavigationBar(windowInsets = WindowInsets(0), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        if (!immersive && WindowInsets.ime.getBottom(LocalDensity.current) == 0) NavigationBar(windowInsets = WindowInsets(0), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Tab.entries.forEach { t ->
                 NavigationBarItem(
                     selected = tab == t,
                     onClick = { tab = t },
                     icon = { Icon(t.icon, contentDescription = null) },
-                    label = { Text(stringResource(t.label)) },
+                    label = { Text(stringResource(t.label), maxLines = 1, softWrap = false) },
                 )
             }
         }

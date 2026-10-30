@@ -71,6 +71,17 @@ sealed class TrayContext : ApplicationContext
                 System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"")?.Dispose();
         };
         tray.BalloonTipClosed += (_, _) => lastReceived = null;
+        // Человек за компьютером должен знать, что его экран сейчас видят.
+        host.Server.ScreenWatching += (phone, watching) => ui.Post(_ =>
+        {
+            tray.Text = watching ? $"Couchpad — «{phone}» смотрит экран" : $"Couchpad — {host.Identity.Name}";
+            // При смене монитора показ перезапускается — не повторяем уведомление чаще раза в минуту.
+            if (watching && DateTime.UtcNow - lastScreenBalloon > TimeSpan.FromMinutes(1))
+            {
+                lastScreenBalloon = DateTime.UtcNow;
+                tray.ShowBalloonTip(4000, "Телефон смотрит экран", $"«{phone}» видит этот экран и может управлять мышью.", ToolTipIcon.Info);
+            }
+        }, null);
         host.Power.Failed += (action, error) => ui.Post(_ =>
             tray.ShowBalloonTip(6000, "Не получилось", error, ToolTipIcon.Warning), null);
 
@@ -78,6 +89,7 @@ sealed class TrayContext : ApplicationContext
             ShowPairing();
     }
 
+    DateTime lastScreenBalloon;
     readonly List<string> toSend = [];
     System.Windows.Forms.Timer? sendTimer;
 

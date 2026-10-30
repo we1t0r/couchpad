@@ -318,6 +318,46 @@ public sealed class ServerTests : IAsyncLifetime
         await download;
     }
 
+    [Fact]
+    public async Task Screen_streams_frames_and_taps_land_on_the_monitor()
+    {
+        var token = await PairAsync();
+        using var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(ws);
+
+        string? watching = null;
+        host.Server.ScreenWatching += (phone, on) => watching = on ? phone : null;
+        await SendAsync(ws, Message.Build("screen_start", ("monitor", "test-2"), ("maxWidth", 800)));
+        var info = await ReceiveAsync(ws);
+        Assert.Equal(("screen_info", "test-2"), (info.Str("t"), info.Str("monitor")));
+        Assert.Equal(2, info["monitors"]!.AsArray().Count);
+
+        // Первый кадр — бинарный: тип 1, номер 1, размер 16×9, дальше JPEG.
+        var buffer = new byte[64 * 1024];
+        using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+        {
+            var frame = await ws.ReceiveAsync(buffer, cts.Token);
+            Assert.Equal(WebSocketMessageType.Binary, frame.MessageType);
+            Assert.Equal(1, buffer[0]);
+            Assert.Equal(1u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan(1)));
+            Assert.Equal((16, 9), (System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan(5)),
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan(7))));
+            Assert.Equal(new byte[] { 0xFF, 0xD8 }, buffer[9..11]);
+        }
+        Assert.Equal("Тестовый телефон", watching);
+
+        // Касание в середине второго монитора (он правее первого на 1600 пикселей).
+        await SendAsync(ws, Message.Build("pointer", ("x", 0.5), ("y", 0.5)));
+        await SendAsync(ws, Message.Build("click", ("b", "left")));
+        await WaitUntil(() => input.Lines.Contains("button left up"));
+        Assert.Contains("moveto 2400 450", input.Lines);
+
+        await SendAsync(ws, Message.Build("screen_stop"));
+        await WaitUntil(() => watching is null);
+        Assert.Null(watching);
+    }
+
     [Theory]
     [InlineData("192.168.0.102", "255.255.255.0", "192.168.0.255")]
     [InlineData("10.1.2.3", "255.255.0.0", "10.1.255.255")]

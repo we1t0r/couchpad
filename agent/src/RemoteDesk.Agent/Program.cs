@@ -100,6 +100,8 @@ static class Program
             }
         }
         return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input,
-            Clipboard: input as IClipboard ?? new WinFormsClipboard());
+            Clipboard: input as IClipboard ?? new WinFormsClipboard(),
+            // При записи ввода в файл (автотесты) — ненастоящий экран из агента, настоящий не снимаем.
+            Screen: input is null ? new GdiScreen() : null);
     }
 }

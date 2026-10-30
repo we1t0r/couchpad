@@ -258,4 +258,10 @@
     <string name="s_pf_rw">computer can write</string>
     <string name="s_pf_ro">view and download only</string>
     <string name="s_pf_remove">Stop sharing</string>
+    <string name="tab_screen">Screen</string>
+    <string name="scr_connecting">Connecting to the screen…</string>
+    <string name="scr_hint">Tap — click · hold — right click · drag — drag · two fingers: spread — zoom, move — scroll</string>
+    <string name="scr_fullscreen">Full screen</string>
+    <string name="scr_fullscreen_exit">Exit full screen</string>
+    <string name="scr_monitor">Choose monitor</string>
 </resources>

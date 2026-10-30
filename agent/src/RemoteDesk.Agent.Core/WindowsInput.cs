@@ -14,6 +14,8 @@ public sealed class WindowsInput : IInputSink
 
     public void Move(int dx, int dy) => Send(Mouse(MouseMove, dx, dy, 0));
 
+    public void MoveTo(int x, int y) => SetCursorPos(x, y);
+
     public void Button(MouseButton button, bool down) => Send(Mouse(button switch
     {
         MouseButton.Left => down ? LeftDown : LeftUp,
@@ -110,4 +112,7 @@ public sealed class WindowsInput : IInputSink
 
     [DllImport("user32.dll")]
     static extern uint MapVirtualKeyW(uint code, uint mapType);
+
+    [DllImport("user32.dll")]
+    static extern bool SetCursorPos(int x, int y);
 }

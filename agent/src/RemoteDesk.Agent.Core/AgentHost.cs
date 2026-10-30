@@ -12,7 +12,8 @@ public sealed record AgentOptions(
     IInputSink? Input = null,
     IPowerSink? Power = null,
     IWakeOnLanSetup? Wol = null,
-    IClipboard? Clipboard = null)
+    IClipboard? Clipboard = null,
+    IScreenSource? Screen = null)
 {
     public static string DefaultDataDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RemoteDesk");
@@ -58,7 +59,9 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
                 if (Directory.Exists(path)) Directory.Delete(path, true);
                 else File.Delete(path);
             };
-        var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle, Outbox);
+        var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle, Outbox,
+            // При записи ввода (тесты) — ненастоящий экран: автотест не должен снимать экран разработчика.
+            options.Screen ?? (options.Input is RecordingInput ? new SyntheticScreen() : new NullScreen()));
         Server = new AgentServer(Identity, Devices, Secrets, Info, services);
         if (OperatingSystem.IsWindows() && powerSink is WindowsPower windows)
             windows.MonitorsProblem += msg =>

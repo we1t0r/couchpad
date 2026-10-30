@@ -8,6 +8,10 @@ public enum MouseButton { Left, Right, Middle }
 public interface IInputSink
 {
     void Move(int dx, int dy);
+
+    /// <summary>Поставить курсор в точку рабочего стола (физические пиксели) — касание на картинке экрана.</summary>
+    void MoveTo(int x, int y);
+
     void Button(MouseButton button, bool down);
 
     /// <summary>Прокрутка в единицах WHEEL_DELTA/120: 120 — один щелчок колеса.</summary>
@@ -21,6 +25,7 @@ public interface IInputSink
 public sealed class NullInput : IInputSink
 {
     public void Move(int dx, int dy) { }
+    public void MoveTo(int x, int y) { }
     public void Button(MouseButton button, bool down) { }
     public void Wheel(int vertical, int horizontal) { }
     public void Key(ushort vk, bool down) { }
@@ -64,6 +69,7 @@ public sealed class RecordingInput(string? logFile = null) : IInputSink, IPowerS
     }
 
     public void Move(int dx, int dy) => Add($"move {dx} {dy}");
+    public void MoveTo(int x, int y) => Add($"moveto {x} {y}");
     public void Button(MouseButton button, bool down) => Add($"button {button.ToString().ToLowerInvariant()} {(down ? "down" : "up")}");
     public void Wheel(int vertical, int horizontal) => Add($"wheel {vertical} {horizontal}");
     public void Key(ushort vk, bool down) => Add($"key 0x{vk:X2} {(down ? "down" : "up")}");

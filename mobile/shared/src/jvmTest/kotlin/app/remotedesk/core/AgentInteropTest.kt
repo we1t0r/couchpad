@@ -180,6 +180,17 @@ class AgentInteropTest {
                     close()
                 }
                 assertEquals("отправлено из Проводника", got.toString(Charsets.UTF_8))
+
+                // Экран: в режиме --input-log агент показывает ненастоящий экран 16×9, а касание пишет в журнал.
+                clip.startScreen("test-2", 800)
+                val shot = withTimeout(10_000) { clip.screenFrame.filterNotNull().first() }
+                assertEquals(16 to 9, shot.width to shot.height)
+                assertEquals("test-2", withTimeout(5_000) { clip.screenInfo.filterNotNull().first() }.monitor)
+                clip.input.pointer(0.5f, 0.5f)
+                clip.input.click()
+                clip.ping()
+                assertTrue(inputLog.readText().contains("moveto 2400 450"))
+                clip.stopScreen()
                 clip.close()
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }

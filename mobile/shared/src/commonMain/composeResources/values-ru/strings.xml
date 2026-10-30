@@ -72,7 +72,7 @@
     <string name="problem_closed_text">Компьютер закрыл соединение: Couchpad выключили, или компьютер ушёл в сон.</string>
 
     <string name="tab_touchpad">Тачпад</string>
-    <string name="tab_keyboard">Клавиатура</string>
+    <string name="tab_keyboard">Клавиши</string>
     <string name="tab_info">О ПК</string>
     <string name="button_left">Левая</string>
     <string name="button_right">Правая</string>
@@ -258,4 +258,10 @@
     <string name="s_pf_rw">компьютер может записывать</string>
     <string name="s_pf_ro">только просмотр и скачивание</string>
     <string name="s_pf_remove">Закрыть доступ</string>
+    <string name="tab_screen">Экран</string>
+    <string name="scr_connecting">Подключаемся к экрану…</string>
+    <string name="scr_hint">Нажатие — щелчок · удержание — правая кнопка · провести — перетащить · двумя пальцами: развести — увеличить, вести — прокрутка</string>
+    <string name="scr_fullscreen">Во весь экран</string>
+    <string name="scr_fullscreen_exit">Выйти из полноэкранного режима</string>
+    <string name="scr_monitor">Выбрать монитор</string>
 </resources>

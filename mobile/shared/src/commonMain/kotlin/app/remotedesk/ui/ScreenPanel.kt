@@ -91,6 +91,7 @@ fun ScreenPanel(
     var touched by rememberSaveable { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val current by rememberUpdatedState(settings)
+    FullScreenMode(immersive)
 
     // Декодируем только самый свежий кадр: пришёл новый — недоделанный старый бросаем.
     val image by produceState<ImageBitmap?>(null, frame) {

@@ -28,4 +28,9 @@
     <string name="qa_problem_revoked">доступ отозван. Подключите компьютер заново в приложении.</string>
     <string name="qa_problem_timeout">связь слишком медленная, попробуйте ещё раз</string>
     <string name="qa_problem_other">что-то пошло не так. Подробности — в приложении.</string>
+    <string name="notif_channel">Подключение к компьютеру</string>
+    <string name="notif_connected">Подключено к %1$s</string>
+    <string name="notif_transfers">Передача файлов</string>
+    <string name="notif_tap">Нажмите, чтобы открыть пульт</string>
+    <string name="notif_disconnect">Отключить</string>
 </resources>

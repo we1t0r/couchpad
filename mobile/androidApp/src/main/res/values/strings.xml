@@ -30,4 +30,9 @@
     <string name="qa_problem_revoked">access was revoked. Connect it again in the app.</string>
     <string name="qa_problem_timeout">the connection is too slow, try again</string>
     <string name="qa_problem_other">something went wrong. Open the app for details.</string>
+    <string name="notif_channel">Connection to computer</string>
+    <string name="notif_connected">Connected to %1$s</string>
+    <string name="notif_transfers">Transferring files</string>
+    <string name="notif_tap">Tap to open the remote</string>
+    <string name="notif_disconnect">Disconnect</string>
 </resources>

@@ -1,6 +1,8 @@
 package app.remotedesk.android
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -8,10 +10,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import app.remotedesk.core.LinkState
 import app.remotedesk.core.LocalFile
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import app.remotedesk.core.NsdPcDiscovery
-import app.remotedesk.core.PcStore
-import app.remotedesk.core.RemoteSettings
 import app.remotedesk.ui.App
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -32,13 +36,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        storage = AndroidStorage(applicationContext).also { it.picker = picker }
+        val app = couchpad
+        storage = app.storage.also { it.picker = picker }
         if (savedInstanceState == null) handle(intent)
+        // Про уведомления спрашиваем, когда они впервые понадобятся: при первом подключении к компьютеру.
+        lifecycleScope.launch {
+            app.controller.state.first { it is LinkState.Connected }
+            askNotificationsOnce()
+        }
 
-        val prefs = settingsStorage()
-        val store = PcStore(prefs)
-        val remoteSettings = RemoteSettings(prefs)
-        val device = store.device(deviceName(), "android")
+        val store = app.store
+        val remoteSettings = app.remoteSettings
+        val device = app.device
         discovery = NsdPcDiscovery(applicationContext)
 
         setContent {
@@ -61,8 +70,25 @@ class MainActivity : ComponentActivity() {
                 clipboard = AndroidClipboard(applicationContext),
                 incomingLinks = incomingLinks,
                 incomingShares = incomingShares,
+                sharedController = app.controller,
+                sharedTransfers = app.transfers,
             )
         }
+    }
+
+    private val notificationsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /**
+     * Android 13+ без разрешения прячет уведомление о подключении и передаче файлов.
+     * Спрашиваем один раз; откажут — всё работает, просто без уведомления.
+     */
+    private fun askNotificationsOnce() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = getSharedPreferences("ui", MODE_PRIVATE)
+        if (prefs.getBoolean("asked_notifications", false)) return
+        prefs.edit().putBoolean("asked_notifications", true).apply()
+        notificationsPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onNewIntent(intent: Intent) {

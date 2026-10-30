@@ -81,11 +81,17 @@ fun App(
     incomingLinks: MutableStateFlow<String?> = remember { MutableStateFlow(null) },
     /** Файлы, присланные в приложение кнопкой «Поделиться» других приложений. */
     incomingShares: MutableStateFlow<List<LocalFile>?> = remember { MutableStateFlow(null) },
+    /**
+     * Соединение и передачи. На Android они живут в процессе, а не в окне: свернули приложение —
+     * передача идёт дальше, а компьютер может прислать файл.
+     */
+    sharedController: ConnectionController? = null,
+    sharedTransfers: Transfers? = null,
 ) {
     RemoteDeskTheme {
         val scope = rememberCoroutineScope()
-        val controller = remember { ConnectionController(store, device, scope) }
-        val transfers = remember { Transfers(scope, storage) }
+        val controller = remember { sharedController ?: ConnectionController(store, device, scope) }
+        val transfers = remember { sharedTransfers ?: Transfers(scope, storage) }
         val clipHistory by remoteSettings.clipHistory.collectAsState()
         val shares by incomingShares.collectAsState()
         val extras = RemoteExtras(device.id, transfers, storage, clipboard, clipHistory, remoteSettings::addClip, store::setWakeHost)

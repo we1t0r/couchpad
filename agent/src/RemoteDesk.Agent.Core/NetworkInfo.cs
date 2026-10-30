@@ -43,6 +43,29 @@ public static class NetworkInfo
 
     static bool IsLinkLocal(IPAddress ip) => ip.GetAddressBytes() is [169, 254, ..];
 
+    /// <summary>
+    /// Адрес из домашней сети (или Tailscale, 100.64.0.0/10), а не из интернета. Через проброс порта
+    /// на роутере телефон приходит со своим адресом в интернете.
+    /// </summary>
+    public static bool IsLocal(IPAddress? ip)
+    {
+        if (ip is null)
+            return false;
+        if (ip.IsIPv4MappedToIPv6)
+            ip = ip.MapToIPv4();
+        if (IPAddress.IsLoopback(ip))
+            return true;
+        if (ip.AddressFamily == AddressFamily.InterNetworkV6)
+            return ip.IsIPv6LinkLocal || ip.IsIPv6UniqueLocal || ip.IsIPv6SiteLocal;
+        return ip.GetAddressBytes() switch
+        {
+            [10, ..] or [192, 168, ..] or [169, 254, ..] => true,
+            [172, var b, ..] => b is >= 16 and <= 31,
+            [100, var b, ..] => b is >= 64 and <= 127,
+            _ => false,
+        };
+    }
+
     /// <summary>Широковещательный адрес подсети (192.168.0.255): туда телефон шлёт пакет пробуждения.</summary>
     internal static string? Broadcast(IPAddress ip, IPAddress? mask)
     {

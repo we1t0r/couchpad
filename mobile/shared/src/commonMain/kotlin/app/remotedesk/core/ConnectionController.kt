@@ -42,7 +42,7 @@ class ConnectionController(
         val pc = store.get(pcId) ?: return
         start(LinkState.Connecting(pc.id, pc.name, pairing = false), retryForMs) {
             val connection = AgentConnection.connect(pc, device)
-            store.updateInfo(pc.id, connection.agent, connection.host)
+            store.updateInfo(pc.id, connection.agent, connection.host.takeUnless { connection.viaInternet })
             pc.id to connection
         }
     }

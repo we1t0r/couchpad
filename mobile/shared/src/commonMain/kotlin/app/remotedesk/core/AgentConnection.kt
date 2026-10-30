@@ -7,12 +7,15 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +25,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onSubscription
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -77,6 +82,8 @@ class AgentConnection private constructor(
     val permissions: List<String>,
     /** ПК на экране входа Windows: это помощник службы входа, после входа его сменит обычный агент. */
     val signIn: Boolean = false,
+    /** Подключились не из дома, по адресу дома в интернете: экран идёт в экономном качестве. */
+    val viaInternet: Boolean = false,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val pongs = MutableSharedFlow<Long>(extraBufferCapacity = 16)
@@ -150,8 +157,11 @@ class AgentConnection private constructor(
     val screenFrame: StateFlow<ScreenImage?> = _screenFrame.asStateFlow()
 
     /** Показывать экран ПК: [monitor] — id монитора (null — основной), [maxWidth] — ширина кадра в пикселях. */
-    fun startScreen(monitor: String?, maxWidth: Int) =
-        enqueue(message("screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 30))
+    fun startScreen(monitor: String?, maxWidth: Int) = enqueue(
+        // Через интернет — меньше и сжатее: мобильный интернет и отдача домашнего роутера обычно не выдержат 30 кадров Full HD.
+        if (viaInternet) message("screen_start", "monitor" to monitor, "maxWidth" to minOf(maxWidth, 1280), "quality" to 50, "fps" to 15)
+        else message("screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 30),
+    )
 
     fun stopScreen() {
         enqueue(message("screen_stop"))
@@ -268,6 +278,8 @@ class AgentConnection private constructor(
 
     companion object {
         private const val CONNECT_TIMEOUT_MS = 4_000L
+        private const val INTERNET_TIMEOUT_MS = 8_000L
+        private const val INTERNET_DELAY_MS = 1_500L
 
         /** Сопряжение по ссылке из QR-кода. */
         suspend fun pair(link: PairingLink, device: DeviceInfo): Paired {
@@ -280,7 +292,7 @@ class AgentConnection private constructor(
                 "platform" to device.platform,
                 "appVersion" to Protocol.APP_VERSION,
             )
-            val opened = open(link.hosts, link.port, link.fingerprint, hello, expected = "paired")
+            val opened = open(link.hosts, null, link.port, link.fingerprint, hello, expected = "paired")
             val token = opened.reply.str("token")
             val agent = opened.reply.agentInfo()
             if (token.isNullOrEmpty() || agent == null || agent.id != link.agentId) {
@@ -312,7 +324,7 @@ class AgentConnection private constructor(
                 "token" to pc.token,
                 "appVersion" to Protocol.APP_VERSION,
             )
-            val opened = open(pc.hosts, pc.port, pc.fingerprint, hello, expected = "welcome")
+            val opened = open(pc.hosts, pc.internetHost, pc.port, pc.fingerprint, hello, expected = "welcome")
             val agent = opened.reply.agentInfo()
             if (agent == null || agent.id != pc.id) {
                 opened.dispose()
@@ -321,6 +333,7 @@ class AgentConnection private constructor(
             return AgentConnection(
                 opened.client, opened.session, opened.host, agent, opened.reply.strings("permissions"),
                 signIn = opened.reply.bool("signin") ?: false,
+                viaInternet = opened.viaInternet,
             )
         }
 
@@ -329,6 +342,7 @@ class AgentConnection private constructor(
             val session: DefaultClientWebSocketSession,
             val host: String,
             val reply: JsonObject,
+            val viaInternet: Boolean,
         ) {
             suspend fun dispose() {
                 try {
@@ -339,54 +353,103 @@ class AgentConnection private constructor(
             }
         }
 
-        /** Пробует адреса по очереди. Ответ агента с ошибкой — окончательный, другие адреса уже не пробуем. */
+        /** Ошибка связи с одним адресом: другие адреса ещё могут ответить. */
+        private class HostFailed(val reason: AgentException) : Exception(reason)
+
+        /**
+         * Пробует домашние адреса [hosts] разом, а чуть позже — адрес дома в интернете [internet]: дома
+         * ответит локальный адрес, и картинка пойдёт по Wi-Fi, а не через роутер. Первый ответивший побеждает.
+         * Ответ агента с ошибкой — окончательный, другие адреса уже не ждём.
+         */
         private suspend fun open(
             hosts: List<String>,
+            internet: String?,
+            port: Int,
+            fingerprint: String,
+            first: String,
+            expected: String,
+        ): Opened = coroutineScope {
+            val local = hosts.distinct()
+            val remote = internet?.takeIf { it !in local }
+            val winner = CompletableDeferred<Opened>()
+            val failure = MutableStateFlow(AgentException(Problem.Unreachable))
+            val attempts = (local.map { it to false } + listOfNotNull(remote?.let { it to true })).map { (host, viaInternet) ->
+                launch {
+                    if (viaInternet && local.isNotEmpty()) delay(INTERNET_DELAY_MS)
+                    try {
+                        val opened = attempt(host, viaInternet, port, fingerprint, first, expected)
+                        if (!winner.complete(opened)) withContext(NonCancellable) { opened.dispose() }
+                    } catch (e: HostFailed) {
+                        // Чужой сертификат важнее «не ответил», молчание после подключения — важнее отказа сети.
+                        failure.update { old -> if (rank(e.reason.problem) >= rank(old.problem)) e.reason else old }
+                    } catch (e: AgentException) {
+                        winner.completeExceptionally(e)
+                    }
+                }
+            }
+            launch {
+                attempts.joinAll()
+                winner.completeExceptionally(failure.value)
+            }
+            try {
+                winner.await()
+            } finally {
+                attempts.forEach { it.cancel() }
+            }
+        }
+
+        private fun rank(problem: Problem) = when (problem) {
+            Problem.WrongPc -> 2
+            Problem.Timeout -> 1
+            else -> 0
+        }
+
+        private suspend fun attempt(
+            host: String,
+            viaInternet: Boolean,
             port: Int,
             fingerprint: String,
             first: String,
             expected: String,
         ): Opened {
-            var failure = AgentException(Problem.Unreachable)
-            for (host in hosts.distinct()) {
-                val mismatch = MutableStateFlow(false)
-                val client = pinnedHttpClient(fingerprint) { mismatch.value = true }
-                var session: DefaultClientWebSocketSession? = null
-                try {
-                    session = withTimeout(CONNECT_TIMEOUT_MS) { client.webSocketSession("wss://$host:$port/ws") }
-                    session.send(Frame.Text(first))
-                    val frame = withTimeout(CONNECT_TIMEOUT_MS) { session.incoming.receive() }
-                    val reply = (frame as? Frame.Text)?.let { parseMessage(it.readText()) }
-                        ?: throw AgentException(Problem.Protocol, "not a message")
-                    when (reply.type) {
-                        expected -> return Opened(client, session, host, reply)
-                        "error" -> throw AgentException(problemForCode(reply.str("code")), reply.str("msg"))
-                        else -> throw AgentException(Problem.Protocol, "unexpected ${reply.type}")
-                    }
-                } catch (e: AgentException) {
+            val timeout = if (viaInternet) INTERNET_TIMEOUT_MS else CONNECT_TIMEOUT_MS
+            val mismatch = MutableStateFlow(false)
+            val client = pinnedHttpClient(fingerprint) { mismatch.value = true }
+            var session: DefaultClientWebSocketSession? = null
+            try {
+                session = withTimeout(timeout) { client.webSocketSession("wss://$host:$port/ws") }
+                session.send(Frame.Text(first))
+                val frame = withTimeout(timeout) { session.incoming.receive() }
+                val reply = (frame as? Frame.Text)?.let { parseMessage(it.readText()) }
+                    ?: throw AgentException(Problem.Protocol, "not a message")
+                when (reply.type) {
+                    expected -> return Opened(client, session, host, reply, viaInternet)
+                    "error" -> throw AgentException(problemForCode(reply.str("code")), reply.str("msg"))
+                    else -> throw AgentException(Problem.Protocol, "unexpected ${reply.type}")
+                }
+            } catch (e: AgentException) {
+                withContext(NonCancellable) {
                     try {
                         session?.close()
                     } catch (_: Exception) {
                     }
-                    client.close()
-                    throw e
-                } catch (e: TimeoutCancellationException) {
-                    client.close()
-                    // Подключились, но агент молчит, — это не то же самое, что «нет связи».
-                    failure = AgentException(if (session != null) Problem.Timeout else Problem.Unreachable, host, e)
-                } catch (e: CancellationException) {
-                    client.close()
-                    throw e
-                } catch (e: Exception) {
-                    client.close()
-                    if (mismatch.value) {
-                        failure = AgentException(Problem.WrongPc, host, e)
-                    } else if (failure.problem != Problem.WrongPc) {
-                        failure = AgentException(Problem.Unreachable, "$host: ${e.message}", e)
-                    }
                 }
+                client.close()
+                throw e
+            } catch (e: TimeoutCancellationException) {
+                client.close()
+                // Подключились, но агент молчит, — это не то же самое, что «нет связи».
+                throw HostFailed(AgentException(if (session != null) Problem.Timeout else Problem.Unreachable, host, e))
+            } catch (e: CancellationException) {
+                client.close()
+                throw e
+            } catch (e: Exception) {
+                client.close()
+                throw HostFailed(
+                    if (mismatch.value) AgentException(Problem.WrongPc, host, e)
+                    else AgentException(Problem.Unreachable, "$host: ${e.message}", e),
+                )
             }
-            throw failure
         }
     }
 }

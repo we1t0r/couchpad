@@ -67,7 +67,7 @@ class PcStore(private val settings: Settings) {
     }
 
     /** После подключения обновляем то, что агент сообщил о себе. */
-    fun updateInfo(id: String, agent: AgentInfo, host: String) = change { list ->
+    fun updateInfo(id: String, agent: AgentInfo, host: String?) = change { list ->
         list.map { pc ->
             if (pc.id != id) pc
             else pc.copy(
@@ -75,7 +75,7 @@ class PcStore(private val settings: Settings) {
                 os = agent.os,
                 agentVersion = agent.version,
                 macs = agent.macs.ifEmpty { pc.macs },
-                hosts = (listOf(host) + pc.hosts).distinct().take(MAX_HOSTS),
+                hosts = (listOfNotNull(host) + pc.hosts).distinct().take(MAX_HOSTS),
                 revoked = false,
             )
         }
@@ -99,3 +99,6 @@ class PcStore(private val settings: Settings) {
         const val MAX_HOSTS = 6
     }
 }
+
+/** Адрес дома в интернете без порта: через него телефон подключается к ПК не из дома (проброс TCP-порта агента). */
+val SavedPc.internetHost: String? get() = WakeOnLan.internetTarget(this)?.first

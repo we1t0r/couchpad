@@ -136,7 +136,7 @@ public sealed class AgentServer(
             return;
         }
         using var ws = await ctx.WebSockets.AcceptWebSocketAsync();
-        var session = new Session(this, ws);
+        var session = new Session(this, ws, ctx.Connection.RemoteIpAddress);
         sessions[session] = 0;
         try
         {
@@ -255,7 +255,7 @@ public sealed class AgentServer(
 }
 
 /// <summary>Одно соединение с телефоном.</summary>
-internal sealed class Session(AgentServer server, WebSocket ws)
+internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remote)
 {
     const int MaxMessageBytes = 1 << 20;
     readonly SemaphoreSlim sendLock = new(1, 1);
@@ -409,6 +409,13 @@ internal sealed class Session(AgentServer server, WebSocket ws)
         if (server.Services.SignIn)
         {
             await CloseWithErrorAsync(Protocol.Errors.Forbidden, "Компьютер на экране входа. Подключите телефон после входа в Windows");
+            return;
+        }
+
+        // Через интернет (проброс порта на роутере) — только уже сопряжённые телефоны.
+        if (!NetworkInfo.IsLocal(remote))
+        {
+            await CloseWithErrorAsync(Protocol.Errors.Forbidden, "Сопряжение — только в домашней сети. Подключите телефон к Wi-Fi рядом с компьютером");
             return;
         }
 

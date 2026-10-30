@@ -320,6 +320,7 @@ private fun Connected(state: LinkState.Connected, pc: SavedPc?, setWakeHost: (St
                     Spacer(Modifier.width(6.dp))
                     Text(
                         stringResource(Res.string.connected) + " · " +
+                            (if (state.connection.viaInternet) stringResource(Res.string.via_internet) + " · " else "") +
                             (state.pingMs?.let { stringResource(Res.string.ping, it.toString()) } ?: stringResource(Res.string.ping_waiting)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -358,9 +359,10 @@ private fun Connected(state: LinkState.Connected, pc: SavedPc?, setWakeHost: (St
         }
     }
 
+    if (pc != null) RemoteWakeCard(pc, setWakeHost)
+
     SectionTitle(stringResource(Res.string.wol_title))
     WolCard(state.connection)
-    if (pc != null) RemoteWakeCard(pc, setWakeHost)
 }
 
 /** «Включение по сети»: что проверил агент и кнопка открыть мастер на экране ПК. */
@@ -413,7 +415,7 @@ private fun WolCard(connection: AgentConnection) {
     }
 }
 
-/** «Включение не из дома»: адрес дома в интернете, куда кнопка «Включить» тоже шлёт сигнал. */
+/** «Не из дома»: адрес дома в интернете — для подключения через проброс порта и для кнопки «Включить». */
 @Composable
 private fun RemoteWakeCard(pc: SavedPc, setWakeHost: (String, String) -> Unit) {
     var text by remember(pc.id) { mutableStateOf(pc.wakeHost) }
@@ -426,7 +428,7 @@ private fun RemoteWakeCard(pc: SavedPc, setWakeHost: (String, String) -> Unit) {
             Spacer(Modifier.width(12.dp))
             Text(stringResource(Res.string.wol_remote_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
-        Hint(stringResource(Res.string.wol_remote_text))
+        Hint(stringResource(Res.string.wol_remote_text, pc.port.toString()))
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },

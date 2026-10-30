@@ -12,6 +12,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -231,6 +232,17 @@ class AgentInteropTest {
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }
                 assertEquals(Problem.Unreachable, nobody.problem)
+
+                // Не из дома: домашний адрес молчит, отвечает адрес дома в интернете (здесь — тот же агент).
+                val away = AgentConnection.connect(paired.pc.copy(hosts = listOf("10.255.255.1"), wakeHost = "127.0.0.1:9"), device)
+                assertTrue(away.viaInternet)
+                assertEquals("127.0.0.1", away.host)
+                away.ping()
+                away.close()
+                // Дома побеждает домашний адрес, даже если адрес в интернете тоже указан.
+                val home = AgentConnection.connect(paired.pc.copy(wakeHost = "localhost"), device)
+                assertFalse(home.viaInternet)
+                home.close()
             }
         }
     }

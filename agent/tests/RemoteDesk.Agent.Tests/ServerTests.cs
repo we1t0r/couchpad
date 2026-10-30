@@ -364,6 +364,21 @@ public sealed class ServerTests : IAsyncLifetime
     public void Subnet_broadcast(string ip, string mask, string expected) =>
         Assert.Equal(expected, NetworkInfo.Broadcast(System.Net.IPAddress.Parse(ip), System.Net.IPAddress.Parse(mask)));
 
+    [Theory]
+    [InlineData("192.168.0.5", true)]
+    [InlineData("10.0.0.1", true)]
+    [InlineData("172.20.1.1", true)]
+    [InlineData("100.101.102.103", true)]
+    [InlineData("127.0.0.1", true)]
+    [InlineData("::ffff:192.168.1.2", true)]
+    [InlineData("fe80::1", true)]
+    [InlineData("172.32.0.1", false)]
+    [InlineData("203.0.113.5", false)]
+    [InlineData("::ffff:8.8.8.8", false)]
+    [InlineData("2a00:1450:4010::1", false)]
+    public void Local_or_internet_address(string ip, bool local) =>
+        Assert.Equal(local, NetworkInfo.IsLocal(System.Net.IPAddress.Parse(ip)));
+
     static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 100 && !condition(); i++)

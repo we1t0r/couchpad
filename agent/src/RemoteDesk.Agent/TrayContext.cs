@@ -25,6 +25,10 @@ sealed class TrayContext : ApplicationContext
         menu.Items.Add("Телефоны…", null, (_, _) => ShowDevices());
         menu.Items.Add("Папки для телефона…", null, (_, _) => ShowShares());
         menu.Items.Add("Включение по сети…", null, (_, _) => ShowWol());
+        var autostartItem = new ToolStripMenuItem("Запускать вместе с Windows") { CheckOnClick = true };
+        autostartItem.Click += (_, _) => Autostart.Set(autostartItem.Checked);
+        menu.Opening += (_, _) => autostartItem.Checked = Autostart.IsEnabled;
+        menu.Items.Add(autostartItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выход", null, (_, _) => ExitThread());
 

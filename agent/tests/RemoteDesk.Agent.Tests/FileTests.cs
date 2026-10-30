@@ -90,9 +90,19 @@ public sealed class FileTests : IAsyncLifetime
     {
         // Точка соединения внутри открытой папки, ведущая наружу (создаётся без прав администратора).
         var link = Path.Combine(Shared, "escape");
-        Directory.CreateSymbolicLink(link, dir);
-        var r = await http.GetAsync("download?root=s&path=escape%2Fsecret.txt");
-        Assert.Equal(HttpStatusCode.Forbidden, r.StatusCode);
+        using (var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{dir}\"")
+               { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })!)
+            mklink.WaitForExit(10_000);
+        Assert.True(Directory.Exists(link), "точка соединения не создана");
+        try
+        {
+            var r = await http.GetAsync("download?root=s&path=escape%2Fsecret.txt");
+            Assert.Equal(HttpStatusCode.Forbidden, r.StatusCode);
+        }
+        finally
+        {
+            Directory.Delete(link); // удаляет только саму точку соединения, не то, на что она ведёт
+        }
     }
 
     [Fact]

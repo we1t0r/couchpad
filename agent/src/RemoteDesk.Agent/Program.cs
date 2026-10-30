@@ -46,6 +46,10 @@ static class Program
         if (linkIndex >= 0 && linkIndex + 1 < args.Length)
             File.WriteAllText(args[linkIndex + 1], host.PairingLink(options.Loopback ? ["127.0.0.1"] : null));
 
+        // Обычный запуск (не тесты и не разработка с отдельной папкой) — запускаться вместе с Windows.
+        if (options.DataDir == AgentOptions.DefaultDataDir && !options.Loopback && options.Input is null)
+            Autostart.EnableOnFirstRun(options.DataDir);
+
         var showPairing = args.Contains("--pair") || host.Devices.All.Count == 0;
         Application.Run(new TrayContext(host, showPairing));
 

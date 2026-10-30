@@ -20,7 +20,8 @@ public sealed record AgentServices(
     IWakeOnLanSetup Wol,
     FileService Files,
     IClipboard Clipboard,
-    Action<string> Recycle);
+    Action<string> Recycle,
+    Outbox Outbox);
 
 /// <summary>Сервер агента поверх TLS: wss://ip:port/ws для управления и https://ip:port/api/… для файлов.</summary>
 public sealed class AgentServer(
@@ -142,8 +143,41 @@ public sealed class AgentServer(
         }
     }
 
+    readonly List<OutboxItem> undelivered = [];
+
+    internal static string OfferMessage(IEnumerable<OutboxItem> items) =>
+        Message.Build("offer", ("files", items.Select(i => new { id = i.Id, name = i.Name, size = i.Size }).ToList()));
+
+    /// <summary>
+    /// Предложить файлы подключённым телефонам — они сразу начнут скачивать.
+    /// Если ни один не подключён, файлы уйдут первому, кто подключится (в течение часа).
+    /// </summary>
+    /// <returns>Сколько телефонов получило предложение сейчас.</returns>
+    public async Task<int> OfferAsync(IReadOnlyList<OutboxItem> items)
+    {
+        var phones = sessions.Keys.Where(s => s.DeviceId is not null).ToList();
+        if (phones.Count == 0)
+        {
+            lock (undelivered)
+                undelivered.AddRange(items);
+            return 0;
+        }
+        var text = OfferMessage(items);
+        foreach (var session in phones)
+            await session.SendAsync(text);
+        return phones.Count;
+    }
+
     internal void OnAuthenticated(Session session, PairedDevice device, bool justPaired)
     {
+        List<OutboxItem> waiting;
+        lock (undelivered)
+        {
+            waiting = [.. undelivered];
+            undelivered.Clear();
+        }
+        if (waiting.Count > 0)
+            _ = session.SendAsync(OfferMessage(waiting));
         if (justPaired)
             Paired?.Invoke(device);
         ConnectionsChanged?.Invoke();

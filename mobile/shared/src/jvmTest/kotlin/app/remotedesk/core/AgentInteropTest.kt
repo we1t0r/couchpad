@@ -168,6 +168,18 @@ class AgentInteropTest {
                 assertEquals(PcClip("", true), clip.clipboardGet())
                 assertEquals(listOf<Byte>(1, 2, 3), pictures.clipImage().toList())
                 pictures.close()
+
+                // «Отправить на телефон»: вторая копия агента с --send передаёт файл первой, та — телефону.
+                val sent = File(dataDir, "с ПК.txt").apply { writeText("отправлено из Проводника") }
+                ProcessBuilder(exe.path, "--data-dir", File(dataDir, "agent").path, "--send", sent.path).start().waitFor(10, TimeUnit.SECONDS)
+                val offer = withTimeout(10_000) { clip.offers.receive() }.single()
+                assertEquals("с ПК.txt", offer.name)
+                val got = java.io.ByteArrayOutputStream()
+                AgentFiles(paired.pc, device.id).run {
+                    download(PcOffer.ROOT, offer.id, 0) { b, n -> got.write(b, 0, n) }
+                    close()
+                }
+                assertEquals("отправлено из Проводника", got.toString(Charsets.UTF_8))
                 clip.close()
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }

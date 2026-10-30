@@ -170,6 +170,19 @@ public sealed class FileTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sent_to_phone_file_downloads_by_id_only()
+    {
+        // Файл вне открытых папок: отправить на телефон можно что угодно, но только по выданному id.
+        var (files, phones) = await host.SendToPhoneAsync([Path.Combine(dir, "secret.txt"), Shared]);
+        Assert.Equal((1, 0), (files, phones));
+
+        var id = host.Outbox.Add([Path.Combine(dir, "secret.txt")])[0].Id;
+        Assert.Equal("за пределами", Encoding.UTF8.GetString(await http.GetByteArrayAsync($"download?root=outbox&path={id}")));
+        Assert.Equal(HttpStatusCode.NotFound, (await http.GetAsync("download?root=outbox&path=nope")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync("download?root=s&path=..%2Fsecret.txt")).StatusCode);
+    }
+
+    [Fact]
     public async Task Clipboard_image_goes_both_ways()
     {
         var url = new Uri(http.BaseAddress!, "/api/clip/image");

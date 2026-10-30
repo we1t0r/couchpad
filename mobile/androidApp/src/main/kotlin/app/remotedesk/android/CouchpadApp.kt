@@ -5,6 +5,7 @@ import app.remotedesk.core.ConnectionController
 import app.remotedesk.core.PcStore
 import app.remotedesk.core.RemoteSettings
 import app.remotedesk.core.Transfers
+import app.remotedesk.core.receiveFromPc
 import kotlinx.coroutines.MainScope
 
 /**
@@ -23,6 +24,7 @@ class CouchpadApp : Application() {
     override fun onCreate() {
         super.onCreate()
         RemoteService.watch(this)
+        receiveFromPc(scope, controller, store, device.id, transfers)
     }
 }
 

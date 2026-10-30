@@ -11,17 +11,25 @@ static class Program
     ///   --port N          свой порт (по умолчанию 47800);
     ///   --loopback        слушать только 127.0.0.1 и не объявляться в сети (для разработки);
     ///   --dev-link файл   записать ссылку сопряжения в файл (для автотестов приложения);
-    ///   --input-log файл  не трогать мышь и клавиатуру, а записывать ввод в файл (для автотестов).
+    ///   --input-log файл  не трогать мышь и клавиатуру, а записывать ввод в файл (для автотестов);
+    ///   --send файлы…     отправить файлы на телефон (так вызывает пункт меню Проводника).
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
         var options = ParseArgs(args);
 
-        // Один агент на пользователя: второй экземпляр просто выходит.
-        using var mutex = new Mutex(true, @"Local\RemoteDesk.Agent." + options.DataDir.GetHashCode(), out var first);
+        var sendIndex = Array.IndexOf(args, "--send");
+        string[] toSend = sendIndex >= 0 ? args[(sendIndex + 1)..] : [];
+
+        // Один агент на пользователя: второй экземпляр отдаёт файлы для отправки первому и выходит.
+        using var mutex = new Mutex(true, @"Local\RemoteDesk.Agent." + SendToPhone.InstanceId(options.DataDir), out var first);
         if (!first)
+        {
+            if (toSend.Length > 0)
+                SendToPhone.TrySend(options.DataDir, toSend);
             return 0;
+        }
 
         ApplicationConfiguration.Initialize();
 
@@ -48,10 +56,19 @@ static class Program
 
         // Обычный запуск (не тесты и не разработка с отдельной папкой) — запускаться вместе с Windows.
         if (options.DataDir == AgentOptions.DefaultDataDir && !options.Loopback && options.Input is null)
+        {
             Autostart.EnableOnFirstRun(options.DataDir);
+            SendToPhone.Register();
+        }
 
         var showPairing = args.Contains("--pair") || host.Devices.All.Count == 0;
-        Application.Run(new TrayContext(host, showPairing));
+        var tray = new TrayContext(host, showPairing);
+        using var stop = new CancellationTokenSource();
+        _ = SendToPhone.ListenAsync(options.DataDir, tray.SendFiles, stop.Token);
+        if (toSend.Length > 0)
+            tray.SendFiles(toSend);
+        Application.Run(tray);
+        stop.Cancel();
 
         Task.Run(() => host.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(5));
         return 0;

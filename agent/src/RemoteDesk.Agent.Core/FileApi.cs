@@ -48,7 +48,10 @@ static class FileApi
                     });
                     break;
                 case "download" when method is "GET" or "HEAD":
-                    var full = files.ReadablePath(root!, path);
+                    // Отправленное с ПК («Отправить на телефон») лежит где угодно — его выдаём по id.
+                    var full = root == Outbox.Root
+                        ? server.Services.Outbox.PathOf(path) ?? throw new FileAccessException(404, "not_found", "Файл больше не доступен — отправьте его с компьютера ещё раз")
+                        : files.ReadablePath(root!, path);
                     // Range-запросы — докачка с места обрыва.
                     await Results.File(full, "application/octet-stream", Path.GetFileName(full), enableRangeProcessing: true).ExecuteAsync(ctx);
                     break;

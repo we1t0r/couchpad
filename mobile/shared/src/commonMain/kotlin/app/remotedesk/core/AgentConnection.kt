@@ -14,6 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -120,6 +121,11 @@ class AgentConnection private constructor(
         }
     }
 
+    private val _offers = Channel<List<PcOffer>>(Channel.UNLIMITED)
+
+    /** Файлы, которые компьютер прислал сам («Отправить на телефон» в Проводнике). Читает один получатель. */
+    val offers: ReceiveChannel<List<PcOffer>> = _offers
+
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
@@ -155,6 +161,7 @@ class AgentConnection private constructor(
                     "power_timer" -> _powerTimer.value = RemotePower.parseTimer(msg)
                     "wol_status" -> _wolStatus.value = WolStatus.parse(msg)
                     "clip", "clip_done" -> clipReplies.emit(msg)
+                    "offer" -> PcOffer.parse(msg).takeIf { it.isNotEmpty() }?.let { _offers.trySend(it) }
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))
                         // Ошибка, после которой агент закрывает соединение, — запоминаем её как причину.

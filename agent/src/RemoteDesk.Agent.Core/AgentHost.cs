@@ -38,6 +38,8 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     public ShareStore Shares { get; } = new(options.DataDir);
     FileService? files;
     public FileService Files => files ??= new FileService(Shares);
+    /// <summary>Файлы, отправленные на телефон из Проводника.</summary>
+    public Outbox Outbox { get; } = new();
     MdnsAdvertiser? mdns;
 
     public async Task StartAsync(CancellationToken ct = default)
@@ -51,7 +53,7 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
                 if (Directory.Exists(path)) Directory.Delete(path, true);
                 else File.Delete(path);
             };
-        var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle);
+        var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle, Outbox);
         Server = new AgentServer(Identity, Devices, Secrets, Info, services);
         if (OperatingSystem.IsWindows() && powerSink is WindowsPower windows)
             windows.MonitorsProblem += msg =>
@@ -79,6 +81,13 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
         var key = Secrets.Current.Key;
         return $"rdesk://pair?v={Protocol.Version}&id={Identity.Id}&n={Uri.EscapeDataString(Identity.Name)}"
                + $"&h={string.Join(',', hosts)}&p={Server.Port}&fp={Identity.Fingerprint}&k={key}";
+    }
+
+    /// <summary>«Отправить на телефон»: сколько файлов принято и скольким телефонам ушло предложение сейчас.</summary>
+    public async Task<(int Files, int Phones)> SendToPhoneAsync(IEnumerable<string> paths)
+    {
+        var items = Outbox.Add(paths);
+        return items.Count == 0 ? (0, 0) : (items.Count, await Server.OfferAsync(items));
     }
 
     /// <summary>Отзывает доступ телефона и сразу отключает его.</summary>

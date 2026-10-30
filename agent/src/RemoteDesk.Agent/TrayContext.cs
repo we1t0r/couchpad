@@ -76,6 +76,39 @@ sealed class TrayContext : ApplicationContext
             ShowPairing();
     }
 
+    readonly List<string> toSend = [];
+    System.Windows.Forms.Timer? sendTimer;
+
+    /// <summary>
+    /// «Отправить на телефон» из Проводника. Можно звать из любого потока. Explorer запускает по копии
+    /// программы на каждый выделенный файл, поэтому ждём полсекунды и отправляем всё одной пачкой.
+    /// </summary>
+    public void SendFiles(string[] paths) => ui.Post(_ =>
+    {
+        toSend.AddRange(paths);
+        sendTimer ??= new System.Windows.Forms.Timer { Interval = 500 };
+        sendTimer.Tick -= OnSendTimer;
+        sendTimer.Tick += OnSendTimer;
+        sendTimer.Stop();
+        sendTimer.Start();
+    }, null);
+
+    async void OnSendTimer(object? sender, EventArgs e)
+    {
+        sendTimer!.Stop();
+        var batch = toSend.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        toSend.Clear();
+        var (files, phones) = await host.SendToPhoneAsync(batch);
+        if (files == 0)
+            tray.ShowBalloonTip(5000, "Нечего отправить", "На телефон можно отправить только файлы, не папки.", ToolTipIcon.Warning);
+        else if (phones == 0)
+            tray.ShowBalloonTip(6000, "Телефон не подключён",
+                $"Файлов: {files}. Они уйдут, когда вы откроете компьютер в Couchpad на телефоне (в течение часа).", ToolTipIcon.Info);
+        else
+            tray.ShowBalloonTip(4000, "Отправлено на телефон",
+                files == 1 ? Path.GetFileName(batch[0]) + " — телефон уже скачивает." : $"Файлов: {files} — телефон уже скачивает.", ToolTipIcon.Info);
+    }
+
     /// <summary>Действия, перед которыми стоит предупредить: можно потерять несохранённое.</summary>
     static bool NeedsWarning(PowerAction a) =>
         a is PowerAction.Shutdown or PowerAction.Restart or PowerAction.Sleep or PowerAction.Hibernate or PowerAction.SignOut;

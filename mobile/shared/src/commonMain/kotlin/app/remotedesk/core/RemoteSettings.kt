@@ -35,6 +35,10 @@ data class TouchpadSettings(
     val confirmPower: Boolean = true,
     /** Погашенные мониторы будит только кнопка в приложении (или клавиша на ПК), а не мышь. */
     val monitorsWakeByAppOnly: Boolean = false,
+    /** Звук ПК на вкладке «Экран» (кнопка с динамиком). */
+    val screenSound: Boolean = false,
+    /** Пока звук идёт на телефон, колонки ПК молчат. */
+    val mutePcSpeakers: Boolean = true,
 )
 
 class RemoteSettings(private val settings: Settings) {

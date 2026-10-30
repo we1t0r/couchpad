@@ -113,6 +113,11 @@ fun SettingsScreen(
                 onChange { it.copy(monitorsWakeByAppOnly = v) }
             }
 
+            Header(Res.string.settings_screen)
+            SwitchSetting(Res.string.s_mute_title, Res.string.s_mute_sub, Res.string.s_mute_info, settings.mutePcSpeakers, { info = it }) { v ->
+                onChange { it.copy(mutePcSpeakers = v) }
+            }
+
             if (folders != null) PhoneFoldersSetting(folders)
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))

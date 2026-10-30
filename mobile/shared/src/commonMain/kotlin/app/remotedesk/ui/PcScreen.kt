@@ -267,7 +267,7 @@ private fun RemoteControl(
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
-                Tab.Screen -> ScreenPanel(state.connection, settings, immersive, onImmersive, Modifier.fillMaxSize())
+                Tab.Screen -> ScreenPanel(state.connection, settings, onChangeSettings, immersive, onImmersive, Modifier.fillMaxSize())
                 Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipboard, files.takeIf { !signIn }, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize(), showClipboard = !signIn)
                 Tab.Files -> if (files != null) FilesPanel(files, extras.transfers, extras.storage, notify, Modifier.fillMaxSize())
                 Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())

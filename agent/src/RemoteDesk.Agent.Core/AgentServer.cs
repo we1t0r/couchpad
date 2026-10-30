@@ -25,7 +25,8 @@ public sealed record AgentServices(
     Outbox Outbox,
     IScreenSource Screen,
     IReadOnlyList<string>? Permissions = null,
-    bool SignIn = false);
+    bool SignIn = false,
+    IAudioSource? Audio = null);
 
 /// <summary>Сервер агента поверх TLS: wss://ip:port/ws для управления и https://ip:port/api/… для файлов.</summary>
 public sealed class AgentServer(
@@ -285,6 +286,8 @@ internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remot
             // Чтобы на ПК не «залип» Ctrl или зажатая кнопка мыши.
             input.ReleaseAll();
             StopScreen();
+            // Колонки ПК, заглушённые на время звука, включаются обратно.
+            StopAudio();
         }
     }
 
@@ -364,6 +367,17 @@ internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remot
                 break;
             case "screen_ack":
                 screen?.Ack();
+                break;
+            case "audio_start":
+                if (!permissions.Contains("screen"))
+                {
+                    await SendAsync(Message.Error(Protocol.Errors.Forbidden, "Показ экрана и звук выключены на компьютере"));
+                    break;
+                }
+                await StartAudioAsync(msg);
+                break;
+            case "audio_stop":
+                StopAudio();
                 break;
             case "pointer":
                 if (!permissions.Contains("input"))
@@ -529,6 +543,28 @@ internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remot
         screen.Dispose();
         screen = null;
         server.OnScreenWatching(this, false);
+    }
+
+    AudioStream? audio;
+
+    async Task StartAudioAsync(System.Text.Json.Nodes.JsonObject msg)
+    {
+        StopAudio();
+        try
+        {
+            audio = new AudioStream(server.Services.Audio ?? new NullAudio(), SendBinaryAsync,
+                msg.Bool("mute") ?? false, (int)(msg.Num("bitrate") ?? 96_000));
+        }
+        catch (Exception e)
+        {
+            await SendAsync(Message.Error(Protocol.Errors.Forbidden, e.Message));
+        }
+    }
+
+    void StopAudio()
+    {
+        audio?.Dispose();
+        audio = null;
     }
 
     /// <summary>Касание на картинке экрана: x и y от 0 до 1 внутри показанного монитора.</summary>

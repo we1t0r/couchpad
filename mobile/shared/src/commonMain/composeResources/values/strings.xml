@@ -268,4 +268,10 @@
     <string name="signin_banner">The PC is on the Windows sign-in screen. Enter your PIN on the Screen or Keys tab. Files and clipboard work after you sign in.</string>
     <string name="scr_keyboard">Keyboard</string>
     <string name="scr_keyboard_hide">Hide keyboard</string>
+    <string name="scr_sound_on">Turn on PC sound</string>
+    <string name="scr_sound_off">Turn off PC sound</string>
+    <string name="settings_screen">Screen and sound</string>
+    <string name="s_mute_title">Silence PC speakers</string>
+    <string name="s_mute_sub">While the computer’s sound plays on the phone</string>
+    <string name="s_mute_info">The speaker button on the Screen tab plays the computer’s sound on the phone. With this setting the computer’s speakers go quiet meanwhile (volume to zero), and when you turn phone sound off or leave Screen, the volume comes back as it was. If someone raised the volume on the computer meanwhile, it is left alone. Phone sound lags the picture by a fraction of a second. On by default.</string>
 </resources>

@@ -15,7 +15,8 @@ public sealed record AgentOptions(
     IWakeOnLanSetup? Wol = null,
     IClipboard? Clipboard = null,
     IScreenSource? Screen = null,
-    bool SignIn = false)
+    bool SignIn = false,
+    IAudioSource? Audio = null)
 {
     /// <summary>Что можно телефону с экрана входа Windows: файлы и буфер обмена — только после входа.</summary>
     public static readonly string[] SignInPermissions = ["input", "power", "screen"];
@@ -68,7 +69,8 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
         var services = new AgentServices(input, Power, Wol, Files, options.Clipboard ?? options.Input as IClipboard ?? new NullClipboard(), recycle, Outbox,
             // При записи ввода (тесты) — ненастоящий экран: автотест не должен снимать экран разработчика.
             options.Screen ?? (options.Input is RecordingInput ? new SyntheticScreen() : new NullScreen()),
-            options.SignIn ? AgentOptions.SignInPermissions : null, options.SignIn);
+            options.SignIn ? AgentOptions.SignInPermissions : null, options.SignIn,
+            options.Audio ?? (options.Input is RecordingInput ? new SyntheticAudio() : new NullAudio()));
         Server = new AgentServer(Identity, Devices, Secrets, Info, services);
         if (OperatingSystem.IsWindows() && powerSink is WindowsPower windows)
             windows.MonitorsProblem += msg =>

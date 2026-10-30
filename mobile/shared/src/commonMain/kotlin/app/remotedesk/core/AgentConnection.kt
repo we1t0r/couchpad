@@ -16,6 +16,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -168,7 +169,24 @@ class AgentConnection private constructor(
         _screenFrame.value = null
     }
 
+    private val _audio = Channel<ByteArray>(16, BufferOverflow.DROP_OLDEST)
+
+    /** Звук ПК — пакеты Opus (после [startAudio]). Читает один получатель — проигрыватель. */
+    val audio: ReceiveChannel<ByteArray> = _audio
+
+    /** Слушать звук ПК; [muteSpeakers] — колонки ПК пока молчат. */
+    fun startAudio(muteSpeakers: Boolean) {
+        while (_audio.tryReceive().isSuccess) Unit // остатки прошлого раза не нужны
+        enqueue(message("audio_start", "mute" to muteSpeakers, "bitrate" to if (viaInternet) 64_000 else 128_000))
+    }
+
+    fun stopAudio() = enqueue(message("audio_stop"))
+
     private fun onBinary(data: ByteArray) {
+        AudioFrame.opus(data)?.let {
+            _audio.trySend(it)
+            return
+        }
         val image = ScreenImage.parse(data) ?: return
         // Подтверждаем сразу: агент держит в пути не больше двух кадров, поэтому задержка не копится.
         enqueue(message("screen_ack", "n" to image.number))

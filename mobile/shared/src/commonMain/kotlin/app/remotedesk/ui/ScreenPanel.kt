@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -81,6 +83,9 @@ import app.remotedesk.resources.scr_monitor
 import app.remotedesk.resources.scr_keyboard
 import app.remotedesk.resources.scr_keyboard_hide
 import app.remotedesk.resources.kb_field_hint
+import app.remotedesk.resources.scr_sound_on
+import app.remotedesk.resources.scr_sound_off
+import app.remotedesk.core.openOpusPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.decodeToImageBitmap
@@ -100,6 +105,7 @@ private const val MAX_ZOOM = 5f
 fun ScreenPanel(
     connection: AgentConnection,
     settings: TouchpadSettings,
+    onChangeSettings: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     immersive: Boolean,
     onImmersive: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -114,6 +120,20 @@ fun ScreenPanel(
     val haptic = LocalHapticFeedback.current
     val current by rememberUpdatedState(settings)
     FullScreenMode(immersive)
+
+    // Звук ПК: пока включён, пакеты Opus идут в проигрыватель телефона.
+    if (settings.screenSound) {
+        LaunchedEffect(connection, settings.mutePcSpeakers) {
+            connection.startAudio(settings.mutePcSpeakers)
+            val player = openOpusPlayer()
+            try {
+                withContext(Dispatchers.Default) { for (packet in connection.audio) player?.play(packet) }
+            } finally {
+                connection.stopAudio()
+                player?.close()
+            }
+        }
+    }
 
     // Декодируем только самый свежий кадр: пришёл новый — недоделанный старый бросаем.
     val image by produceState<ImageBitmap?>(null, frame) {
@@ -280,6 +300,10 @@ fun ScreenPanel(
                     }
                 }
             }
+            OverlayButton(
+                if (settings.screenSound) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                stringResource(if (settings.screenSound) Res.string.scr_sound_off else Res.string.scr_sound_on),
+            ) { onChangeSettings { it.copy(screenSound = !it.screenSound) } }
             OverlayButton(Icons.Default.Keyboard, stringResource(Res.string.scr_keyboard)) {
                 typing = !typing
                 touched = true

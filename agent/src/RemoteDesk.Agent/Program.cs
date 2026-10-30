@@ -146,8 +146,11 @@ static class Program
         // При записи ввода в файл (автотесты) — ненастоящий экран из агента, настоящий не снимаем.
         // Иначе — настоящие экран и ввод, а пока компьютер заблокирован — через помощника службы входа.
         LockAwareDesktop? desktop = null;
+        WasapiAudio? audio = null;
         if (input is null)
         {
+            audio = new WasapiAudio(dataDir);
+            audio.RestoreAfterCrash();
             var bridge = DesktopHelper.Client();
             var session = Sessions.Current;
             desktop = new LockAwareDesktop(new WindowsInput(), new GdiScreen(), bridge, bridge, Sessions.Cached(() => Sessions.IsLocked(session)));
@@ -155,6 +158,7 @@ static class Program
         return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input ?? (IInputSink?)desktop,
             Clipboard: input as IClipboard ?? new WinFormsClipboard(),
             Screen: desktop,
+            Audio: audio,
             // Агент как на экране входа — только для автотестов приложения, вместе с --input-log.
             SignIn: signIn && input is not null);
     }

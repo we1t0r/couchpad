@@ -228,6 +228,11 @@ class AgentInteropTest {
                 clip.ping()
                 assertTrue(inputLog.readText().contains("moveto 2400 450"))
                 clip.stopScreen()
+                // Звук: у агента с --input-log он ненастоящий (тон), колонки ПК не трогаются.
+                clip.startAudio(muteSpeakers = false)
+                val sound = withTimeout(5_000) { List(5) { clip.audio.receive() } }
+                assertTrue(sound.all { it.size in 10..1500 })
+                clip.stopAudio()
                 clip.close()
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }

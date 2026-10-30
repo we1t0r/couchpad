@@ -2,7 +2,11 @@ package app.remotedesk.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.union
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -44,6 +48,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -96,6 +101,8 @@ fun PcScreen(
     BackHandler(onBack)
 
     Scaffold(
+        // Клавиатура телефона поднимает содержимое, чтобы поле ввода не пряталось под ней.
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
@@ -189,6 +196,7 @@ private enum class Tab(val label: StringResource, val icon: String) {
 }
 
 /** Пульт: тачпад, клавиатура, файлы, питание и сведения о ПК — вкладками внизу. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RemoteControl(
     state: LinkState.Connected,
@@ -226,7 +234,8 @@ private fun RemoteControl(
                 ) { Connected(state, pc, extras.setWakeHost) }
             }
         }
-        NavigationBar(windowInsets = WindowInsets(0)) {
+        // Пока открыта клавиатура телефона, вкладки прячутся — полю ввода остаётся больше места.
+        if (!WindowInsets.isImeVisible) NavigationBar(windowInsets = WindowInsets(0)) {
             Tab.entries.forEach { t ->
                 NavigationBarItem(
                     selected = tab == t,

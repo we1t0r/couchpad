@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,6 +19,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardHide
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import app.remotedesk.core.RemoteInput
+import app.remotedesk.core.TextRelay
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -60,6 +78,9 @@ import app.remotedesk.resources.scr_fullscreen
 import app.remotedesk.resources.scr_fullscreen_exit
 import app.remotedesk.resources.scr_hint
 import app.remotedesk.resources.scr_monitor
+import app.remotedesk.resources.scr_keyboard
+import app.remotedesk.resources.scr_keyboard_hide
+import app.remotedesk.resources.kb_field_hint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.decodeToImageBitmap
@@ -89,6 +110,7 @@ fun ScreenPanel(
     var zoom by remember { mutableStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
     var touched by rememberSaveable { mutableStateOf(false) }
+    var typing by rememberSaveable { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val current by rememberUpdatedState(settings)
     FullScreenMode(immersive)
@@ -258,11 +280,17 @@ fun ScreenPanel(
                     }
                 }
             }
+            OverlayButton(Icons.Default.Keyboard, stringResource(Res.string.scr_keyboard)) {
+                typing = !typing
+                touched = true
+            }
             OverlayButton(
                 if (immersive) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                 stringResource(if (immersive) Res.string.scr_fullscreen_exit else Res.string.scr_fullscreen),
             ) { onImmersive(!immersive) }
         }
+
+        if (typing) TypingBar(connection.input, onClose = { typing = false }, Modifier.align(Alignment.BottomCenter))
 
         if (!touched && image != null) {
             Text(
@@ -273,6 +301,58 @@ fun ScreenPanel(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
                     .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(12.dp)).padding(12.dp, 8.dp),
             )
+        }
+    }
+}
+
+/**
+ * Строка ввода поверх экрана ПК: клавиатура телефона открывается сразу, набранное уходит на ПК по ходу набора.
+ * ⌫ и Enter — отдельными кнопками: на пустом поле клавиатура телефона Backspace не присылает.
+ */
+@Composable
+private fun TypingBar(input: RemoteInput, onClose: () -> Unit, modifier: Modifier) {
+    val relay = remember(input) { TextRelay(input) }
+    var text by remember { mutableStateOf("") }
+    val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focus.requestFocus()
+        keyboard?.show()
+    }
+    fun enter() {
+        input.keys("enter")
+        relay.reset()
+        text = ""
+    }
+    Surface(modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = {
+                    relay.onChange(it)
+                    text = it
+                },
+                modifier = Modifier.weight(1f).focusRequester(focus),
+                placeholder = { Text(stringResource(Res.string.kb_field_hint)) },
+                singleLine = true,
+                shape = MaterialTheme.shapes.large,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { enter() }),
+            )
+            IconButton(onClick = {
+                if (text.isEmpty()) {
+                    input.keys("backspace")
+                } else {
+                    // Стираем и в поле, и на ПК — иначе они разойдутся.
+                    text = text.dropLast(if (text.length > 1 && text[text.length - 2].isHighSurrogate()) 2 else 1)
+                    relay.onChange(text)
+                }
+            }) { Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Backspace") }
+            IconButton(onClick = { enter() }) { Icon(Icons.AutoMirrored.Filled.KeyboardReturn, contentDescription = "Enter") }
+            IconButton(onClick = {
+                keyboard?.hide()
+                onClose()
+            }) { Icon(Icons.Default.KeyboardHide, contentDescription = stringResource(Res.string.scr_keyboard_hide)) }
         }
     }
 }

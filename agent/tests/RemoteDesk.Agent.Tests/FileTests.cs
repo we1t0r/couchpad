@@ -170,6 +170,18 @@ public sealed class FileTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Clipboard_image_goes_both_ways()
+    {
+        var url = new Uri(http.BaseAddress!, "/api/clip/image");
+        Assert.Equal(HttpStatusCode.NotFound, (await http.GetAsync(url)).StatusCode);
+
+        byte[] png = [0x89, 0x50, 0x4E, 0x47, 1, 2, 3];
+        Assert.True((await http.PutAsync(url, new ByteArrayContent(png))).IsSuccessStatusCode);
+        Assert.Contains("clip image 7", input.Lines);
+        Assert.Equal(png, await http.GetByteArrayAsync(url));
+    }
+
+    [Fact]
     public async Task Wrong_token_is_rejected()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "roots");

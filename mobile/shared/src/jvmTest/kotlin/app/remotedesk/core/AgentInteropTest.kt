@@ -161,7 +161,13 @@ class AgentInteropTest {
 
                 val clip = AgentConnection.connect(paired.pc, device)
                 clip.clipboardSet("из теста")
-                assertEquals("из теста", clip.clipboardGet())
+                assertEquals(PcClip("из теста", false), clip.clipboardGet())
+                // Картинка — через HTTPS; после неё в буфере ПК нет текста, а есть картинка.
+                val pictures = AgentFiles(paired.pc, device.id)
+                pictures.putClipImage(ClipImage(byteArrayOf(1, 2, 3), "image/png"))
+                assertEquals(PcClip("", true), clip.clipboardGet())
+                assertEquals(listOf<Byte>(1, 2, 3), pictures.clipImage().toList())
+                pictures.close()
                 clip.close()
 
                 val nobody = assertFailsWith<AgentException> { AgentConnection.connect(paired.pc.copy(port = PORT + 1), device) }

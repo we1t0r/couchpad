@@ -107,9 +107,10 @@ class AgentConnection private constructor(
 
     private val clipReplies = MutableSharedFlow<JsonObject>(extraBufferCapacity = 4)
 
-    /** Текст из буфера обмена ПК. */
-    suspend fun clipboardGet(): String = withTimeout(10_000) {
-        clipReplies.onSubscription { enqueue(message("clip_get")) }.first { it.type == "clip" }.str("text").orEmpty()
+    /** Что в буфере обмена ПК: текст или признак картинки. */
+    suspend fun clipboardGet(): PcClip = withTimeout(10_000) {
+        val reply = clipReplies.onSubscription { enqueue(message("clip_get")) }.first { it.type == "clip" }
+        PcClip(reply.str("text").orEmpty(), reply.bool("image") ?: false)
     }
 
     /** Положить текст в буфер обмена ПК. */

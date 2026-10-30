@@ -31,6 +31,7 @@ import app.remotedesk.core.AgentFiles
 import app.remotedesk.core.Conflict
 import app.remotedesk.core.LocalFile
 import app.remotedesk.core.PhoneStorage
+import app.remotedesk.core.PhoneClipboard
 import app.remotedesk.core.Transfers
 import app.remotedesk.core.SavedPc
 import app.remotedesk.resources.share_no_pc
@@ -76,6 +77,7 @@ fun App(
     device: DeviceInfo,
     scanQr: (onResult: (String?) -> Unit) -> Unit,
     storage: PhoneStorage,
+    clipboard: PhoneClipboard,
     incomingLinks: MutableStateFlow<String?> = remember { MutableStateFlow(null) },
     /** Файлы, присланные в приложение кнопкой «Поделиться» других приложений. */
     incomingShares: MutableStateFlow<List<LocalFile>?> = remember { MutableStateFlow(null) },
@@ -86,7 +88,7 @@ fun App(
         val transfers = remember { Transfers(scope, storage) }
         val clipHistory by remoteSettings.clipHistory.collectAsState()
         val shares by incomingShares.collectAsState()
-        val extras = RemoteExtras(device.id, transfers, storage, clipHistory, remoteSettings::addClip, store::setWakeHost)
+        val extras = RemoteExtras(device.id, transfers, storage, clipboard, clipHistory, remoteSettings::addClip, store::setWakeHost)
         val pcs by store.pcs.collectAsState()
         val found by discovery.found.collectAsState()
         val link by controller.state.collectAsState()

@@ -242,8 +242,10 @@
     <string name="clip_got">Текст с компьютера скопирован на телефон</string>
     <string name="clip_sent">Текст отправлен в буфер обмена компьютера</string>
     <string name="clip_copied">Скопировано на телефон</string>
-    <string name="clip_pc_empty">В буфере обмена компьютера нет текста</string>
-    <string name="clip_phone_empty">В буфере обмена телефона нет текста — сначала скопируйте что-нибудь</string>
+    <string name="clip_pc_empty">В буфере обмена компьютера нет ни текста, ни картинки</string>
+    <string name="clip_image_got">Картинка с компьютера скопирована на телефон</string>
+    <string name="clip_image_sent">Картинка отправлена в буфер обмена компьютера</string>
+    <string name="clip_phone_empty">В буфере обмена телефона нет ни текста, ни картинки — сначала скопируйте что-нибудь</string>
     <string name="clip_failed">Компьютер не ответил — попробуйте ещё раз</string>
 
     <string name="share_title">Отправить на компьютер?</string>

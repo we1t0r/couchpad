@@ -14,6 +14,8 @@ import app.remotedesk.core.LocalFile
 import app.remotedesk.core.MacInfo
 import app.remotedesk.core.PairingLink
 import app.remotedesk.core.PhoneStorage
+import app.remotedesk.core.PhoneClipboard
+import app.remotedesk.core.ClipImage
 import app.remotedesk.core.Problem
 import app.remotedesk.core.SavedPc
 import app.remotedesk.core.TouchpadSettings
@@ -82,7 +84,7 @@ class ScreenshotTest {
         val scope = rememberCoroutineScope()
         return remember {
             RemoteExtras(
-                device.id, Transfers(scope, NoStorage), NoStorage,
+                device.id, Transfers(scope, NoStorage), NoStorage, NoClipboard,
                 listOf("Привет с телефона", "https://example.com/very/long/link/that/does/not/fit"), {}, { _, _ -> },
             )
         }
@@ -143,6 +145,13 @@ class ScreenshotTest {
             agent.waitFor(5, TimeUnit.SECONDS)
             dataDir.deleteRecursively()
         }
+    }
+
+    private object NoClipboard : PhoneClipboard {
+        override fun text(): String? = null
+        override fun setText(text: String) = Unit
+        override suspend fun image(): ClipImage? = null
+        override suspend fun setImage(image: ClipImage) = Unit
     }
 
     private object NoStorage : PhoneStorage {

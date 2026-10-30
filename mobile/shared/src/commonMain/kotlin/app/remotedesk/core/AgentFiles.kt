@@ -1,6 +1,8 @@
 package app.remotedesk.core
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.http.content.ByteArrayContent
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -202,6 +204,19 @@ class AgentFiles(private val pc: SavedPc, private val deviceId: String) {
             })
         })
         return o.num("have") ?: 0
+    }
+
+    private suspend fun clipUrl() = baseUrl().removeSuffix("files/") + "clip/image"
+
+    /** Картинка из буфера обмена ПК (PNG). */
+    suspend fun clipImage(): ByteArray = check(client.get(clipUrl()) { auth() }).body()
+
+    /** Положить картинку в буфер обмена ПК. */
+    suspend fun putClipImage(image: ClipImage) {
+        json(client.put(clipUrl()) {
+            auth()
+            setBody(ByteArrayContent(image.bytes, ContentType.parse(image.mime)))
+        })
     }
 
     fun close() = client.close()

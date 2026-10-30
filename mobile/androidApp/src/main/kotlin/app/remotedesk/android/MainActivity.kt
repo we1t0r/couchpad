@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
                     )
                 },
                 storage = storage,
+                clipboard = AndroidClipboard(applicationContext),
                 incomingLinks = incomingLinks,
                 incomingShares = incomingShares,
             )

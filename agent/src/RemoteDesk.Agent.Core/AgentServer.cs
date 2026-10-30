@@ -113,6 +113,7 @@ public sealed class AgentServer(
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
         app.Map("/ws", HandleAsync);
         app.Map("/api/files/{**op}", ctx => FileApi.HandleAsync(this, ctx));
+        app.Map("/api/clip/image", ctx => FileApi.HandleClipImageAsync(this, ctx));
         await app.StartAsync(ct);
 
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
@@ -249,7 +250,11 @@ internal sealed class Session(AgentServer server, WebSocket ws)
                 }
                 if (type == "clip_get")
                 {
-                    await SendAsync(Message.Build("clip", ("text", await server.Services.Clipboard.GetTextAsync() ?? "")));
+                    // Текст важнее: при копировании из Word или Excel в буфере и текст, и картинка.
+                    // Саму картинку телефон заберёт по HTTPS (/api/clip/image) — в WebSocket она может не влезть.
+                    var clipText = await server.Services.Clipboard.GetTextAsync() ?? "";
+                    var hasImage = clipText.Length == 0 && await server.Services.Clipboard.GetImageAsync() is not null;
+                    await SendAsync(Message.Build("clip", ("text", clipText), ("image", hasImage)));
                 }
                 else
                 {

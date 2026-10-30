@@ -242,8 +242,10 @@
     <string name="clip_got">Text from the computer copied to the phone</string>
     <string name="clip_sent">Text sent to the computer’s clipboard</string>
     <string name="clip_copied">Copied to the phone</string>
-    <string name="clip_pc_empty">There is no text on the computer’s clipboard</string>
-    <string name="clip_phone_empty">There is no text on the phone’s clipboard — copy something first</string>
+    <string name="clip_pc_empty">There is no text or picture on the computer’s clipboard</string>
+    <string name="clip_image_got">Picture from the computer copied to the phone</string>
+    <string name="clip_image_sent">Picture sent to the computer’s clipboard</string>
+    <string name="clip_phone_empty">There is no text or picture on the phone’s clipboard — copy something first</string>
     <string name="clip_failed">The computer didn’t answer — try again</string>
 
     <string name="share_title">Send to the computer?</string>

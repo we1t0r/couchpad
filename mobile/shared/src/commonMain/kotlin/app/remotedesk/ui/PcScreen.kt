@@ -37,6 +37,7 @@ import app.remotedesk.core.TouchpadSettings
 import app.remotedesk.core.AgentConnection
 import app.remotedesk.core.AgentFiles
 import app.remotedesk.core.PhoneStorage
+import app.remotedesk.core.PhoneClipboard
 import app.remotedesk.core.Transfers
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -207,6 +208,7 @@ class RemoteExtras(
     val deviceId: String,
     val transfers: Transfers,
     val storage: PhoneStorage,
+    val clipboard: PhoneClipboard,
     val clipHistory: List<String>,
     val addClip: (String) -> Unit,
     val setWakeHost: (pcId: String, host: String) -> Unit,
@@ -250,7 +252,7 @@ private fun RemoteControl(
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (tab) {
                 Tab.Touchpad -> TouchpadPanel(input, settings, Modifier.fillMaxSize())
-                Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize())
+                Tab.Keyboard -> KeyboardPanel(state.connection, settings, extras.clipboard, files, extras.clipHistory, extras.addClip, notify, Modifier.fillMaxSize())
                 Tab.Files -> if (files != null) FilesPanel(files, extras.transfers, extras.storage, notify, Modifier.fillMaxSize())
                 Tab.Power -> PowerPanel(state.connection, settings, onChangeSettings, Modifier.fillMaxSize())
                 Tab.Info -> Column(

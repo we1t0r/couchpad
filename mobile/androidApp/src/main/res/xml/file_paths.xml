@@ -2,4 +2,6 @@
 <!-- Скачанное на Android 8–9 лежит в папке приложения; через FileProvider его можно открыть другой программой. -->
 <paths>
     <external-files-path name="downloads" path="Download/" />
+    <!-- Картинка с ПК для буфера обмена: её читает приложение, куда её вставят. -->
+    <cache-path name="clip" path="clip/" />
 </paths>

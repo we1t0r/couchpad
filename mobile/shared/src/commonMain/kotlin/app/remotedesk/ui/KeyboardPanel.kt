@@ -59,14 +59,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.remotedesk.core.AgentConnection
+import app.remotedesk.core.AgentFiles
+import app.remotedesk.core.ClipImage
+import app.remotedesk.core.FileError
+import app.remotedesk.core.PhoneClipboard
 import app.remotedesk.core.TextRelay
 import app.remotedesk.core.TouchpadSettings
 import app.remotedesk.resources.*
@@ -119,6 +121,8 @@ private val keyRows = listOf(
 fun KeyboardPanel(
     connection: AgentConnection,
     settings: TouchpadSettings,
+    clipboard: PhoneClipboard,
+    files: AgentFiles?,
     clipHistory: List<String>,
     addClip: (String) -> Unit,
     notify: suspend (String) -> Unit,
@@ -127,37 +131,52 @@ fun KeyboardPanel(
     val input = connection.input
     val relay = remember(input) { TextRelay(input) }
     val scope = rememberCoroutineScope()
-    @Suppress("DEPRECATION")
-    val phoneClipboard = LocalClipboardManager.current
 
     fun fromPc() = scope.launch {
         try {
-            val text = connection.clipboardGet()
-            if (text.isEmpty()) {
-                notify(getString(Res.string.clip_pc_empty))
-            } else {
-                phoneClipboard.setText(AnnotatedString(text))
-                addClip(text)
-                notify(getString(Res.string.clip_got))
+            val clip = connection.clipboardGet()
+            when {
+                clip.text.isNotEmpty() -> {
+                    clipboard.setText(clip.text)
+                    addClip(clip.text)
+                    notify(getString(Res.string.clip_got))
+                }
+                clip.image && files != null -> {
+                    clipboard.setImage(ClipImage(files.clipImage(), "image/png"))
+                    notify(getString(Res.string.clip_image_got))
+                }
+                else -> notify(getString(Res.string.clip_pc_empty))
             }
         } catch (e: CancellationException) {
             throw e
+        } catch (e: FileError) {
+            notify(e.message ?: getString(Res.string.clip_failed))
         } catch (_: Exception) {
             notify(getString(Res.string.clip_failed))
         }
     }
 
+    /** Текст из истории — сразу; без него — что лежит в буфере телефона: текст или картинка. */
     fun toPc(text: String?) = scope.launch {
-        if (text.isNullOrEmpty()) {
-            notify(getString(Res.string.clip_phone_empty))
-            return@launch
-        }
         try {
-            connection.clipboardSet(text)
-            addClip(text)
-            notify(getString(Res.string.clip_sent))
+            val sendText = text ?: clipboard.text()
+            if (!sendText.isNullOrEmpty()) {
+                connection.clipboardSet(sendText)
+                addClip(sendText)
+                notify(getString(Res.string.clip_sent))
+                return@launch
+            }
+            val image = if (text == null) clipboard.image() else null
+            if (image == null || files == null) {
+                notify(getString(Res.string.clip_phone_empty))
+                return@launch
+            }
+            files.putClipImage(image)
+            notify(getString(Res.string.clip_image_sent))
         } catch (e: CancellationException) {
             throw e
+        } catch (e: FileError) {
+            notify(e.message ?: getString(Res.string.clip_failed))
         } catch (_: Exception) {
             notify(getString(Res.string.clip_failed))
         }
@@ -249,7 +268,7 @@ fun KeyboardPanel(
                     Text(stringResource(Res.string.clip_from_pc))
                 }
                 FilledTonalButton(
-                    onClick = { toPc(phoneClipboard.getText()?.text) },
+                    onClick = { toPc(null) },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(vertical = 12.dp),
                 ) {
@@ -264,7 +283,7 @@ fun KeyboardPanel(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Row(
                             Modifier.weight(1f).clickable {
-                                phoneClipboard.setText(AnnotatedString(item))
+                                clipboard.setText(item)
                                 scope.launch { notify(getString(Res.string.clip_copied)) }
                             }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,

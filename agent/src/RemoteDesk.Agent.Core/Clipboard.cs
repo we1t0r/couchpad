@@ -8,12 +8,20 @@ public interface IClipboard
 {
     Task<string?> GetTextAsync();
     Task SetTextAsync(string text);
+
+    /// <summary>Картинка из буфера в PNG или null, если там не картинка.</summary>
+    Task<byte[]?> GetImageAsync();
+
+    /// <summary>Положить картинку (PNG, JPEG и т. п.) в буфер.</summary>
+    Task SetImageAsync(byte[] image);
 }
 
 public sealed class NullClipboard : IClipboard
 {
     public Task<string?> GetTextAsync() => Task.FromResult<string?>(null);
     public Task SetTextAsync(string text) => Task.CompletedTask;
+    public Task<byte[]?> GetImageAsync() => Task.FromResult<byte[]?>(null);
+    public Task SetImageAsync(byte[] image) => Task.CompletedTask;
 }
 
 /// <summary>Удаление в корзину Windows — без окон подтверждения на экране ПК.</summary>

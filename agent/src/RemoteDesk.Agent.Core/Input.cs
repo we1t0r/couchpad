@@ -36,12 +36,24 @@ public sealed class RecordingInput(string? logFile = null) : IInputSink, IPowerS
 {
     readonly List<string> lines = [];
     string clipboard = "";
+    byte[]? image;
 
     public Task<string?> GetTextAsync() => Task.FromResult<string?>(clipboard);
+
+    public Task<byte[]?> GetImageAsync() => Task.FromResult(image);
+
+    public Task SetImageAsync(byte[] data)
+    {
+        image = data;
+        clipboard = "";
+        Add($"clip image {data.Length}");
+        return Task.CompletedTask;
+    }
 
     public Task SetTextAsync(string text)
     {
         clipboard = text;
+        image = null;
         Add($"clip {text}");
         return Task.CompletedTask;
     }

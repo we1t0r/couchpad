@@ -113,6 +113,74 @@ static class FileApi
         }
     }
 
+    /// <summary>Наибольшая картинка, которую телефон может положить в буфер ПК.</summary>
+    const long MaxClipImage = 50 << 20;
+
+    /// <summary>
+    /// Картинка из буфера обмена: GET — забрать с ПК (PNG), PUT — положить на ПК (PNG, JPEG и т. п.).
+    /// Через HTTPS, а не WebSocket: скриншот легко больше мегабайта.
+    /// </summary>
+    public static async Task HandleClipImageAsync(AgentServer server, HttpContext ctx)
+    {
+        var device = server.Devices.Validate(ctx.Request.Headers["X-RDesk-Device"].ToString(), ctx.Request.Headers["X-RDesk-Token"].ToString());
+        if (device is null)
+        {
+            await Fail(ctx, 401, Protocol.Errors.Revoked, "Этот телефон не сопряжён с компьютером");
+            return;
+        }
+        if (!Protocol.DefaultPermissions.Contains("clipboard"))
+        {
+            await Fail(ctx, 403, Protocol.Errors.Forbidden, "Буфер обмена выключен на компьютере");
+            return;
+        }
+
+        var clipboard = server.Services.Clipboard;
+        try
+        {
+            switch (ctx.Request.Method)
+            {
+                case "GET":
+                    if (await clipboard.GetImageAsync() is not { } image)
+                    {
+                        await Fail(ctx, 404, "no_image", "В буфере обмена компьютера нет картинки");
+                        break;
+                    }
+                    ctx.Response.ContentType = "image/png";
+                    ctx.Response.ContentLength = image.Length;
+                    await ctx.Response.Body.WriteAsync(image, ctx.RequestAborted);
+                    break;
+                case "PUT":
+                    if (ctx.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+                        limit.MaxRequestBodySize = MaxClipImage;
+                    using (var body = new MemoryStream())
+                    {
+                        await ctx.Request.Body.CopyToAsync(body, ctx.RequestAborted);
+                        if (body.Length == 0)
+                        {
+                            await Fail(ctx, 400, Protocol.Errors.BadMessage, "Пустая картинка");
+                            break;
+                        }
+                        await clipboard.SetImageAsync(body.ToArray());
+                    }
+                    await Json(ctx, new { ok = true });
+                    break;
+                default:
+                    await Fail(ctx, 405, Protocol.Errors.BadMessage, "Только GET или PUT");
+                    break;
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Image.FromStream не узнал формат.
+            await Fail(ctx, 400, "bad_image", "Компьютер не смог прочитать эту картинку");
+        }
+        catch (Exception e) when (e is IOException or OperationCanceledException or BadHttpRequestException)
+        {
+            // Телефон оборвал передачу или картинка слишком большая.
+            await Fail(ctx, 413, "too_big", "Картинка слишком большая или передача оборвалась");
+        }
+    }
+
     static Task Json(HttpContext ctx, object body) => ctx.Response.WriteAsJsonAsync(body, Message.Options);
 
     static async Task Fail(HttpContext ctx, int status, string code, string msg)

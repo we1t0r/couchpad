@@ -36,6 +36,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.remotedesk.core.ButtonSize
 import app.remotedesk.core.TouchpadSettings
+import app.remotedesk.core.PhoneFolders
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import app.remotedesk.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -52,6 +62,7 @@ fun SettingsScreen(
     onChange: ((TouchpadSettings) -> TouchpadSettings) -> Unit,
     onReset: () -> Unit,
     onBack: () -> Unit,
+    folders: PhoneFolders? = null,
 ) {
     var info by remember { mutableStateOf<Pair<StringResource, StringResource>?>(null) }
     var resetting by remember { mutableStateOf(false) }
@@ -101,6 +112,8 @@ fun SettingsScreen(
             SwitchSetting(Res.string.s_wake_title, Res.string.s_wake_sub, Res.string.s_wake_info, settings.monitorsWakeByAppOnly, { info = it }) { v ->
                 onChange { it.copy(monitorsWakeByAppOnly = v) }
             }
+
+            if (folders != null) PhoneFoldersSetting(folders)
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Header(Res.string.settings_advanced)
@@ -242,5 +255,32 @@ private fun ButtonSizeSetting(
                 FilterChip(selected = value == size, onClick = { onValue(size) }, label = { Text(stringResource(label)) })
             }
         }
+    }
+}
+
+/** «Файлы телефона на компьютере»: какие папки видит ПК и можно ли ему туда записывать. */
+@Composable
+private fun PhoneFoldersSetting(folders: PhoneFolders) {
+    val shares by folders.shares.collectAsState()
+    val scope = rememberCoroutineScope()
+    Header(Res.string.s_pf_title)
+    Hint(stringResource(Res.string.s_pf_hint), Modifier.padding(horizontal = 16.dp))
+    shares.forEach { share ->
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Default.Folder, size = 40.dp)
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(share.name, style = MaterialTheme.typography.bodyLarge)
+                Hint(stringResource(if (share.writable) Res.string.s_pf_rw else Res.string.s_pf_ro))
+            }
+            Switch(checked = share.writable, onCheckedChange = { folders.setWritable(share.id, it) })
+            IconButton(onClick = { folders.remove(share.id) }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.s_pf_remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+    OutlinedButton(onClick = { scope.launch { folders.addFolder() } }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Icon(Icons.Default.CreateNewFolder, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(Res.string.s_pf_add))
     }
 }

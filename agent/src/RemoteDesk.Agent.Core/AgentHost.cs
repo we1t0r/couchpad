@@ -38,6 +38,11 @@ public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
     public ShareStore Shares { get; } = new(options.DataDir);
     FileService? files;
     public FileService Files => files ??= new FileService(Shares);
+    PhoneFiles? phoneFiles;
+
+    /// <summary>Папки телефона для окна «Файлы телефона».</summary>
+    public PhoneFiles PhoneFiles => phoneFiles ??= new PhoneFiles(Server, Files, Outbox);
+
     /// <summary>Файлы, отправленные на телефон из Проводника.</summary>
     public Outbox Outbox { get; } = new();
     MdnsAdvertiser? mdns;

@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
     }
     private lateinit var storage: AndroidStorage
     private val picker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> storage.onPicked(uris) }
+    private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> couchpad.folders.onPicked(uri) }
     private lateinit var discovery: NsdPcDiscovery
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val app = couchpad
         storage = app.storage.also { it.picker = picker }
+        app.folders.picker = folderPicker
         if (savedInstanceState == null) handle(intent)
         // Про уведомления спрашиваем, когда они впервые понадобятся: при первом подключении к компьютеру.
         lifecycleScope.launch {
@@ -72,6 +74,7 @@ class MainActivity : ComponentActivity() {
                 incomingShares = incomingShares,
                 sharedController = app.controller,
                 sharedTransfers = app.transfers,
+                phoneFolders = app.folders,
             )
         }
     }

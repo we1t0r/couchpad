@@ -143,6 +143,41 @@ public sealed class AgentServer(
         }
     }
 
+    long nextPhoneRequest;
+    readonly ConcurrentDictionary<long, TaskCompletionSource<System.Text.Json.Nodes.JsonObject>> phoneRequests = new();
+
+    /// <summary>Запрос к папкам телефона ({"t":"pf"}); ответ — поля pf_r. Ошибку телефона бросает как <see cref="PhoneFilesException"/>.</summary>
+    internal async Task<System.Text.Json.Nodes.JsonObject> AskPhoneAsync(string deviceId, string op, params (string Key, object? Value)[] fields)
+    {
+        var session = sessions.Keys.FirstOrDefault(s => s.DeviceId == deviceId)
+            ?? throw new PhoneFilesException("Телефон отключился. Откройте этот компьютер в Couchpad на телефоне");
+        var id = Interlocked.Increment(ref nextPhoneRequest);
+        var reply = new TaskCompletionSource<System.Text.Json.Nodes.JsonObject>(TaskCreationOptions.RunContinuationsAsynchronously);
+        phoneRequests[id] = reply;
+        try
+        {
+            await session.SendAsync(Message.Build("pf", [("id", id), ("op", op), .. fields]));
+            var msg = await reply.Task.WaitAsync(TimeSpan.FromSeconds(20));
+            if (msg.Str("error") is { } error)
+                throw new PhoneFilesException(error);
+            return msg;
+        }
+        catch (TimeoutException)
+        {
+            throw new PhoneFilesException("Телефон не ответил. Проверьте, что Couchpad на нём открыт и подключён к этому компьютеру");
+        }
+        finally
+        {
+            phoneRequests.TryRemove(id, out _);
+        }
+    }
+
+    internal void OnPhoneReply(System.Text.Json.Nodes.JsonObject msg)
+    {
+        if (msg.Num("id") is { } id && phoneRequests.TryGetValue(id, out var reply))
+            reply.TrySetResult(msg);
+    }
+
     readonly List<OutboxItem> undelivered = [];
 
     internal static string OfferMessage(IEnumerable<OutboxItem> items) =>
@@ -295,6 +330,9 @@ internal sealed class Session(AgentServer server, WebSocket ws)
                     await server.Services.Clipboard.SetTextAsync(msg.Str("text") ?? "");
                     await SendAsync(Message.Build("clip_done"));
                 }
+                break;
+            case "pf_r":
+                server.OnPhoneReply(msg);
                 break;
             case "wol_check":
             case "wol_setup":

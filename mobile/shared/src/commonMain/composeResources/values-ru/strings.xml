@@ -252,4 +252,10 @@
     <string name="share_text">Файлов: %1$s → «%2$s». Они сохранятся в папку «Загрузки» на компьютере; если имя занято — рядом, с номером.</string>
     <string name="share_no_pc">Сначала подключите компьютер: откройте Couchpad и отсканируйте QR-код.</string>
     <string name="share_send">Отправить</string>
+    <string name="s_pf_title">Файлы телефона на компьютере</string>
+    <string name="s_pf_hint">Пока телефон подключён, компьютер видит только эти папки: значок Couchpad на ПК → «Файлы телефона…». Переключатель — может ли компьютер добавлять, переименовывать и удалять файлы.</string>
+    <string name="s_pf_add">Добавить папку</string>
+    <string name="s_pf_rw">компьютер может записывать</string>
+    <string name="s_pf_ro">только просмотр и скачивание</string>
+    <string name="s_pf_remove">Закрыть доступ</string>
 </resources>

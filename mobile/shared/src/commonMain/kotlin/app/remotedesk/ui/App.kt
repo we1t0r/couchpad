@@ -32,6 +32,7 @@ import app.remotedesk.core.Conflict
 import app.remotedesk.core.LocalFile
 import app.remotedesk.core.PhoneStorage
 import app.remotedesk.core.PhoneClipboard
+import app.remotedesk.core.PhoneFolders
 import app.remotedesk.core.Transfers
 import app.remotedesk.core.SavedPc
 import app.remotedesk.resources.share_no_pc
@@ -87,6 +88,8 @@ fun App(
      */
     sharedController: ConnectionController? = null,
     sharedTransfers: Transfers? = null,
+    /** Папки телефона, открытые компьютеру (раздел в настройках); null — платформа этого не умеет. */
+    phoneFolders: PhoneFolders? = null,
 ) {
     RemoteDeskTheme {
         val scope = rememberCoroutineScope()
@@ -157,6 +160,7 @@ fun App(
                 settings = touchpad,
                 onChange = remoteSettings::update,
                 onReset = remoteSettings::reset,
+                folders = phoneFolders,
                 onBack = { showSettings = false },
             )
         } else when (val state = link) {

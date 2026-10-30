@@ -117,6 +117,22 @@ public sealed class FileService(ShareStore shares)
     /// <summary>Файл пришёл с телефона в «Входящие» («Поделиться → на ПК»).</summary>
     public event Action<string>? Received;
 
+    /// <summary>Файл, который ПК попросил у телефона (окно «Файлы телефона»), скачан.</summary>
+    public event Action<string>? Pulled;
+
+    readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> pullTargets = new();
+
+    /// <summary>
+    /// Папка ПК, куда телефон положит запрошенный файл: временный корень «pull-…» только с записью.
+    /// Телефон отправляет туда обычной загрузкой, поэтому есть докачка.
+    /// </summary>
+    public string AddPullTarget(string folder)
+    {
+        var id = "pull-" + Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+        pullTargets[id] = Path.GetFullPath(folder);
+        return id;
+    }
+
     public IReadOnlyList<ShareRoot> Roots() => shares.Roots();
 
     /// <summary>Полный путь внутри открытой папки или исключение 403/404.</summary>
@@ -124,6 +140,8 @@ public sealed class FileService(ShareStore shares)
     {
         root = rootId == InboxRoot
             ? new ShareRoot(InboxRoot, "Входящие", shares.InboxPath, true)
+            : rootId is not null && pullTargets.TryGetValue(rootId, out var pullFolder)
+            ? new ShareRoot(rootId, "С телефона", pullFolder, true)
             : shares.Roots().FirstOrDefault(r => r.Id == rootId)
               ?? throw new FileAccessException(404, "no_root", "Эта папка больше не открыта для телефона");
         var basePath = Path.GetFullPath(root.Path);
@@ -281,6 +299,8 @@ public sealed class FileService(ShareStore shares)
             File.Move(part, finalPath, overwrite: true);
             if (rootId == InboxRoot)
                 Received?.Invoke(finalPath);
+            else if (pullTargets.ContainsKey(rootId))
+                Pulled?.Invoke(finalPath);
         }
         return received;
     }

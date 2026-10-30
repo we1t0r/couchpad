@@ -252,4 +252,10 @@
     <string name="share_text">%1$s file(s) → “%2$s”. They are saved to the computer’s Downloads folder; if a name is taken, next to it with a number.</string>
     <string name="share_no_pc">Connect a computer first: open Couchpad and scan the QR code.</string>
     <string name="share_send">Send</string>
+    <string name="s_pf_title">Phone files on the computer</string>
+    <string name="s_pf_hint">While the phone is connected, the computer sees only these folders: Couchpad icon on the PC → “Phone files…”. The switch lets the computer add, rename and delete files there.</string>
+    <string name="s_pf_add">Add folder</string>
+    <string name="s_pf_rw">computer can write</string>
+    <string name="s_pf_ro">view and download only</string>
+    <string name="s_pf_remove">Stop sharing</string>
 </resources>

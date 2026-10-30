@@ -13,6 +13,7 @@ sealed class TrayContext : ApplicationContext
     PowerWarningForm? warningForm;
     WolForm? wolForm;
     SharesForm? sharesForm;
+    PhoneFilesForm? phoneFilesForm;
     string? lastReceived;
     readonly ToolStripMenuItem cancelTimerItem;
 
@@ -23,6 +24,7 @@ sealed class TrayContext : ApplicationContext
         var menu = new ContextMenuStrip();
         menu.Items.Add("Подключить телефон…", null, (_, _) => ShowPairing());
         menu.Items.Add("Телефоны…", null, (_, _) => ShowDevices());
+        menu.Items.Add("Файлы телефона…", null, (_, _) => ShowPhoneFiles());
         menu.Items.Add("Папки для телефона…", null, (_, _) => ShowShares());
         menu.Items.Add("Включение по сети…", null, (_, _) => ShowWol());
         var autostartItem = new ToolStripMenuItem("Запускать вместе с Windows") { CheckOnClick = true };
@@ -163,6 +165,14 @@ sealed class TrayContext : ApplicationContext
         sharesForm.Activate();
     }
 
+    void ShowPhoneFiles()
+    {
+        if (phoneFilesForm is null || phoneFilesForm.IsDisposed)
+            phoneFilesForm = new PhoneFilesForm(host);
+        phoneFilesForm.Show();
+        phoneFilesForm.Activate();
+    }
+
     void ShowWol()
     {
         if (wolForm is null || wolForm.IsDisposed)
@@ -188,6 +198,7 @@ sealed class TrayContext : ApplicationContext
         warningForm?.Close();
         wolForm?.Close();
         sharesForm?.Close();
+        phoneFilesForm?.Close();
         base.ExitThreadCore();
     }
 }

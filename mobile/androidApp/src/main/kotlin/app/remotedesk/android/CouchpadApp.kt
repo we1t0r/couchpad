@@ -6,6 +6,7 @@ import app.remotedesk.core.PcStore
 import app.remotedesk.core.RemoteSettings
 import app.remotedesk.core.Transfers
 import app.remotedesk.core.receiveFromPc
+import app.remotedesk.core.servePhoneFolders
 import kotlinx.coroutines.MainScope
 
 /**
@@ -20,11 +21,13 @@ class CouchpadApp : Application() {
     val storage by lazy { AndroidStorage(this) }
     val controller by lazy { ConnectionController(store, device, scope) }
     val transfers by lazy { Transfers(scope, storage) }
+    val folders by lazy { AndroidPhoneFolders(this) }
 
     override fun onCreate() {
         super.onCreate()
         RemoteService.watch(this)
         receiveFromPc(scope, controller, store, device.id, transfers)
+        servePhoneFolders(scope, controller, store, device.id, transfers, folders)
     }
 }
 

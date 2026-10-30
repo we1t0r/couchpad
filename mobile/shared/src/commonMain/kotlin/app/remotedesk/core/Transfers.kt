@@ -74,11 +74,12 @@ class Transfers(private val scope: CoroutineScope, private val storage: PhoneSto
         scope.launch { for (work in queue) work() }
     }
 
-    fun download(files: AgentFiles, root: String, path: String, name: String, size: Long) {
+    /** [into] — куда сохранить (например, в папку телефона по просьбе ПК); по умолчанию — в «Загрузки». */
+    fun download(files: AgentFiles, root: String, path: String, name: String, size: Long, into: (suspend () -> DownloadTarget)? = null) {
         val id = add(Transfer(nextId++, upload = false, name = name, total = size))
         queue.trySend {
             val target = try {
-                storage.createDownload(name, size)
+                into?.invoke() ?: storage.createDownload(name, size)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.time.TimeSource
 
 /** Что пошло не так — для понятного пользователю объяснения. */
@@ -126,6 +127,16 @@ class AgentConnection private constructor(
     /** Файлы, которые компьютер прислал сам («Отправить на телефон» в Проводнике). Читает один получатель. */
     val offers: ReceiveChannel<List<PcOffer>> = _offers
 
+    private val _phoneFileRequests = Channel<JsonObject>(Channel.UNLIMITED)
+
+    /** Запросы компьютера к папкам телефона ({"t":"pf"}); отвечать — [replyPhoneFiles]. */
+    val phoneFileRequests: ReceiveChannel<JsonObject> = _phoneFileRequests
+
+    /** Ответ на запрос [id]: поля [fields] (или «error» с текстом для человека за компьютером). */
+    fun replyPhoneFiles(id: Long, fields: JsonObject) {
+        enqueue(JsonObject(fields + mapOf("t" to JsonPrimitive("pf_r"), "id" to JsonPrimitive(id))).toString())
+    }
+
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
@@ -161,6 +172,7 @@ class AgentConnection private constructor(
                     "power_timer" -> _powerTimer.value = RemotePower.parseTimer(msg)
                     "wol_status" -> _wolStatus.value = WolStatus.parse(msg)
                     "clip", "clip_done" -> clipReplies.emit(msg)
+                    "pf" -> _phoneFileRequests.trySend(msg)
                     "offer" -> PcOffer.parse(msg).takeIf { it.isNotEmpty() }?.let { _offers.trySend(it) }
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))

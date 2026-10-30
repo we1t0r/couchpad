@@ -275,6 +275,49 @@ public sealed class ServerTests : IAsyncLifetime
         Assert.Equal("с телефона", (await ReceiveAsync(ws)).Str("text"));
     }
 
+    [Fact]
+    public async Task Phone_folders_requests_and_offers_reach_the_phone()
+    {
+        var token = await PairAsync();
+        await WaitUntil(() => host.Server.ConnectedDeviceIds.Count == 0);
+
+        // Файл, отправленный, пока телефон не подключён, уходит ему сразу после входа.
+        var file = Path.Combine(dir, "отчёт.txt");
+        File.WriteAllText(file, "с ПК");
+        Assert.Equal((1, 0), await host.SendToPhoneAsync([file]));
+
+        using var ws = await ConnectAsync();
+        await SendAsync(ws, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        Assert.Equal("welcome", (await ReceiveAsync(ws)).Str("t"));
+        var offer = await ReceiveAsync(ws);
+        Assert.Equal("offer", offer.Str("t"));
+        Assert.Equal("отчёт.txt", offer["files"]![0]!.AsObject().Str("name"));
+
+        // ПК спрашивает папки телефона — телефон (тут — тест) отвечает.
+        var roots = host.PhoneFiles.RootsAsync("phone-1");
+        var ask = await ReceiveAsync(ws);
+        Assert.Equal(("pf", "roots"), (ask.Str("t"), ask.Str("op")));
+        await SendAsync(ws, Message.Build("pf_r", ("id", ask.Num("id")), ("roots", new[] { new { id = "p-1", name = "Камера", writable = false } })));
+        Assert.Equal([new PhoneRoot("p-1", "Камера", false)], await roots);
+
+        // Ошибка телефона доходит до окна на ПК как есть.
+        var mkdir = host.PhoneFiles.MkdirAsync("phone-1", "p-1", "Новая");
+        ask = await ReceiveAsync(ws);
+        await SendAsync(ws, Message.Build("pf_r", ("id", ask.Num("id")), ("error", "Только для чтения")));
+        Assert.Equal("Только для чтения", (await Assert.ThrowsAsync<PhoneFilesException>(() => mkdir)).Message);
+
+        // Скачать с телефона: ПК заводит папку для приёма, телефон получает её имя в «target».
+        var into = Path.Combine(dir, "из телефона");
+        Directory.CreateDirectory(into);
+        var download = host.PhoneFiles.DownloadAsync("phone-1", "p-1", "DCIM/фото.jpg", into);
+        ask = await ReceiveAsync(ws);
+        Assert.Equal(("push", "DCIM/фото.jpg"), (ask.Str("op"), ask.Str("path")));
+        Assert.StartsWith("pull-", ask.Str("target"));
+        Assert.Equal(Path.GetFullPath(into), host.Files.Resolve(ask.Str("target"), "", out _));
+        await SendAsync(ws, Message.Build("pf_r", ("id", ask.Num("id")), ("ok", true)));
+        await download;
+    }
+
     [Theory]
     [InlineData("192.168.0.102", "255.255.255.0", "192.168.0.255")]
     [InlineData("10.1.2.3", "255.255.0.0", "10.1.255.255")]

@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>RemoteDesk</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>0.1.0</Version>
     <Product>Couchpad</Product>
     <!-- Так программа называется в диспетчере задач и в списке автозагрузки. Имя файла пока прежнее:
@@ -23,6 +24,8 @@
   <ItemGroup>
     <PackageReference Include="NAudio.Wasapi" Version="3.3.0" />
     <PackageReference Include="QRCoder" Version="1.8.1" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.MediaFoundation" Version="3.8.3" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -112,6 +114,9 @@ fun ScreenPanel(
 ) {
     val info by connection.screenInfo.collectAsState()
     val frame by connection.screenFrame.collectAsState()
+    val videoSize by connection.videoSize.collectAsState()
+    val cursor by connection.cursor.collectAsState()
+    val cursorShape by connection.cursorImage.collectAsState()
     var monitor by rememberSaveable { mutableStateOf<String?>(null) }
     var zoom by remember { mutableStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
@@ -135,6 +140,9 @@ fun ScreenPanel(
         }
     }
 
+    val cursorBitmap by produceState<ImageBitmap?>(null, cursorShape) {
+        value = cursorShape?.let { s -> withContext(Dispatchers.Default) { runCatching { s.png.decodeToImageBitmap() }.getOrNull() } }
+    }
     // Декодируем только самый свежий кадр: пришёл новый — недоделанный старый бросаем.
     val image by produceState<ImageBitmap?>(null, frame) {
         val f = frame ?: return@produceState
@@ -149,7 +157,8 @@ fun ScreenPanel(
             onDispose { connection.stopScreen() }
         }
         val box = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
-        val aspect = frame?.let { it.width.toFloat() / it.height } ?: (16f / 9f)
+        val aspect = videoSize?.let { it.first.toFloat() / it.second }
+            ?: frame?.let { it.width.toFloat() / it.height } ?: (16f / 9f)
 
         /** Точка касания → доля ширины и высоты монитора (0..1) с учётом увеличения; null — мимо картинки. */
         fun toScreen(p: Offset, clamp: Boolean): Offset? {
@@ -259,19 +268,48 @@ fun ScreenPanel(
                 }
             },
         ) {
-            image?.let { bitmap ->
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize().graphicsLayer {
+            val video = videoSize
+            val picture = image
+            if (video != null || picture != null) {
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer {
                         scaleX = zoom
                         scaleY = zoom
                         translationX = pan.x
                         translationY = pan.y
                     },
-                )
-            } ?: Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BoxWithConstraints(Modifier.aspectRatio(aspect)) {
+                        if (video != null) {
+                            VideoSurface(connection, Modifier.fillMaxSize())
+                            // В видео курсора нет — рисуем его сами, в масштабе картинки.
+                            val c = cursor
+                            val shape = cursorShape
+                            val bitmap = cursorBitmap
+                            if (c != null && c.visible && shape != null && bitmap != null) {
+                                val monitorWidth = (info?.current?.width ?: video.first).coerceAtLeast(1)
+                                // this.maxWidth — размер картинки (снаружи есть своя maxWidth — ширина кадра в пикселях).
+                                val boxWidth = this.maxWidth
+                                val boxHeight = this.maxHeight
+                                val scale = boxWidth / monitorWidth
+                                val w = (scale * shape.width).coerceAtLeast(14.dp * shape.width / maxOf(shape.width, shape.height))
+                                val k = w / shape.width
+                                Image(
+                                    bitmap = bitmap,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.FillBounds,
+                                    modifier = Modifier
+                                        .offset(boxWidth * c.x - k * shape.hotX, boxHeight * c.y - k * shape.hotY)
+                                        .size(w, k * shape.height),
+                                )
+                            }
+                        } else if (picture != null) {
+                            Image(picture, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                        }
+                    }
+                }
+            } else Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Color.White)
                 Text(stringResource(Res.string.scr_connecting), color = Color.White, modifier = Modifier.padding(top = 16.dp))
             }
@@ -316,7 +354,7 @@ fun ScreenPanel(
 
         if (typing) TypingBar(connection.input, onClose = { typing = false }, Modifier.align(Alignment.BottomCenter))
 
-        if (!touched && image != null) {
+        if (!touched && (image != null || videoSize != null)) {
             Text(
                 stringResource(Res.string.scr_hint),
                 color = Color.White,

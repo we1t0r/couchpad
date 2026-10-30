@@ -10,3 +10,6 @@ actual fun KeepScreenOn(enabled: Boolean) = Unit
 
 @Composable
 actual fun FullScreenMode(enabled: Boolean) = Unit
+
+@Composable
+internal actual fun VideoSurface(connection: app.remotedesk.core.AgentConnection, modifier: androidx.compose.ui.Modifier) = Unit

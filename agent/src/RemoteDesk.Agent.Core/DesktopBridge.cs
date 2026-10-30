@@ -325,7 +325,7 @@ public sealed class DesktopBridgeClient(Func<NamedPipeClientStream> createPipe, 
 /// Так телефон, подключённый к агенту пользователя, видит экран блокировки и может набрать PIN.
 /// </summary>
 public sealed class LockAwareDesktop(IInputSink input, IScreenSource screen, IInputSink lockedInput, IScreenSource lockedScreen, Func<bool> isLocked)
-    : IInputSink, IScreenSource
+    : IInputSink, IScreenSource, IVideoSource
 {
     readonly Func<bool> locked = isLocked;
     readonly IScreenSource lockScreen = lockedScreen;
@@ -343,6 +343,31 @@ public sealed class LockAwareDesktop(IInputSink input, IScreenSource screen, IIn
     public IReadOnlyList<MonitorInfo> Monitors() => screen.Monitors();
 
     public IScreenCapture Open(string? monitorId) => new LockAwareCapture(this, screen.Open(monitorId));
+
+    /// <summary>Видео — только со своего рабочего стола: экран блокировки идёт картинками через помощника.</summary>
+    public IVideoCapture OpenVideo(MonitorInfo monitor, int maxWidth, int fps, int bitrate)
+    {
+        if (screen is not IVideoSource video)
+            throw new VideoUnavailableException("Видео не поддерживается");
+        if (locked())
+            throw new VideoUnavailableException("Компьютер заблокирован");
+        return new LockAwareVideo(locked, video.OpenVideo(monitor, maxWidth, fps, bitrate));
+    }
+
+    sealed class LockAwareVideo(Func<bool> locked, IVideoCapture video) : IVideoCapture
+    {
+        public int Width => video.Width;
+        public int Height => video.Height;
+        public CursorPosition Cursor => video.Cursor;
+        public CursorShape? Shape => video.Shape;
+
+        public VideoFrame? Next(int timeoutMs) =>
+            locked() ? throw new VideoUnavailableException("Компьютер заблокирован") : video.Next(timeoutMs);
+
+        public void RequestKeyFrame() => video.RequestKeyFrame();
+
+        public void Dispose() => video.Dispose();
+    }
 
     /// <summary>Снимает свой экран или экран блокировки — смотря что сейчас на мониторе.</summary>
     sealed class LockAwareCapture(LockAwareDesktop owner, IScreenCapture normal) : IScreenCapture

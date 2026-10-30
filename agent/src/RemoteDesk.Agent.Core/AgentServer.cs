@@ -368,6 +368,9 @@ internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remot
             case "screen_ack":
                 screen?.Ack();
                 break;
+            case "screen_key":
+                screen?.RequestKeyFrame();
+                break;
             case "audio_start":
                 if (!permissions.Contains("screen"))
                 {
@@ -527,10 +530,16 @@ internal sealed class Session(AgentServer server, WebSocket ws, IPAddress? remot
         }
         var wanted = msg.Str("monitor");
         var capture = source.Open(monitors.Any(m => m.Id == wanted) ? wanted : null);
+        // Видео H.264 — если телефон умеет и экран умеет (на экране входа у помощника — только JPEG).
+        var fps = (int)(msg.Num("fps") ?? 30);
+        var video = msg.Str("codec") == "h264" && source is IVideoSource videoSource
+            ? new VideoRequest(videoSource, fps, (int)(msg.Num("bitrate") ?? 8_000_000))
+            : null;
         screen = new ScreenStream(capture, SendBinaryAsync,
-            (int)(msg.Num("maxWidth") ?? 1600), (int)(msg.Num("quality") ?? 70), (int)(msg.Num("fps") ?? 30));
+            (int)(msg.Num("maxWidth") ?? 1600), (int)(msg.Num("quality") ?? 70), fps, video, SendAsync);
         await SendAsync(Message.Build("screen_info",
             ("monitor", capture.Monitor.Id),
+            ("codec", video is null ? "jpeg" : "h264"),
             ("monitors", monitors.Select(m => new { id = m.Id, name = m.Name, width = m.Width, height = m.Height, primary = m.Primary }).ToList())));
         screen.Start();
         server.OnScreenWatching(this, true);

@@ -158,16 +158,49 @@ class AgentConnection private constructor(
     val screenFrame: StateFlow<ScreenImage?> = _screenFrame.asStateFlow()
 
     /** Показывать экран ПК: [monitor] — id монитора (null — основной), [maxWidth] — ширина кадра в пикселях. */
-    fun startScreen(monitor: String?, maxWidth: Int) = enqueue(
-        // Через интернет — меньше и сжатее: мобильный интернет и отдача домашнего роутера обычно не выдержат 30 кадров Full HD.
-        if (viaInternet) message("screen_start", "monitor" to monitor, "maxWidth" to minOf(maxWidth, 1280), "quality" to 50, "fps" to 15)
-        else message("screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 30),
-    )
+    fun startScreen(monitor: String?, maxWidth: Int, video: Boolean = videoDecoderAvailable) {
+        val codec = if (video) "h264" else null
+        enqueue(
+            // Через интернет — меньше и сжатее: мобильный интернет и отдача домашнего роутера не выдержат 60 кадров Full HD.
+            // Видео H.264 — если телефон умеет; иначе (или если ПК не сможет) агент шлёт картинки JPEG.
+            if (viaInternet) message(
+                "screen_start", "monitor" to monitor, "maxWidth" to minOf(maxWidth, 1280), "quality" to 50, "fps" to 30,
+                "codec" to codec, "bitrate" to 2_500_000,
+            )
+            else message(
+                "screen_start", "monitor" to monitor, "maxWidth" to maxWidth, "quality" to 70, "fps" to 60,
+                "codec" to codec, "bitrate" to 12_000_000,
+            ),
+        )
+    }
 
     fun stopScreen() {
         enqueue(message("screen_stop"))
         _screenFrame.value = null
+        _videoSize.value = null
+        _cursor.value = null
     }
+
+    private val _video = Channel<VideoPacket>(120, BufferOverflow.DROP_OLDEST)
+
+    /** Кадры видео H.264 — читает один получатель, декодер. */
+    val video: ReceiveChannel<VideoPacket> = _video
+
+    private val _videoSize = MutableStateFlow<Pair<Int, Int>?>(null)
+
+    /** Размер видео, пока экран идёт видео; null — картинками JPEG ([screenFrame]). */
+    val videoSize: StateFlow<Pair<Int, Int>?> = _videoSize.asStateFlow()
+
+    /** Декодер открыт заново — пусть следующий кадр будет ключевым. */
+    fun requestKeyFrame() = enqueue(message("screen_key"))
+
+    private val _cursor = MutableStateFlow<RemoteCursor?>(null)
+
+    /** Курсор ПК поверх видео (в картинках JPEG он нарисован сам). */
+    val cursor: StateFlow<RemoteCursor?> = _cursor.asStateFlow()
+
+    private val _cursorImage = MutableStateFlow<CursorImage?>(null)
+    val cursorImage: StateFlow<CursorImage?> = _cursorImage.asStateFlow()
 
     private val _audio = Channel<ByteArray>(16, BufferOverflow.DROP_OLDEST)
 
@@ -187,7 +220,15 @@ class AgentConnection private constructor(
             _audio.trySend(it)
             return
         }
+        VideoPacket.parse(data)?.let { packet ->
+            enqueue(message("screen_ack", "n" to packet.number))
+            if (packet.key || _videoSize.value != null) _videoSize.value = packet.width to packet.height
+            _video.trySend(packet)
+            return
+        }
         val image = ScreenImage.parse(data) ?: return
+        // Видео прервалось (экран блокировки, окно UAC) — показываем картинку.
+        _videoSize.value = null
         // Подтверждаем сразу: агент держит в пути не больше двух кадров, поэтому задержка не копится.
         enqueue(message("screen_ack", "n" to image.number))
         _screenFrame.value = image
@@ -234,6 +275,16 @@ class AgentConnection private constructor(
                     "clip", "clip_done" -> clipReplies.emit(msg)
                     "pf" -> _phoneFileRequests.trySend(msg)
                     "screen_info" -> _screenInfo.value = ScreenInfo.parse(msg)
+                    "cursor" -> _cursor.value = RemoteCursor(
+                        (msg.dbl("x") ?: 0.0).toFloat(), (msg.dbl("y") ?: 0.0).toFloat(), msg.bool("v") ?: false,
+                    )
+                    "cursor_shape" -> _cursorImage.value = runCatching {
+                        CursorImage(
+                            kotlin.io.encoding.Base64.decode(msg.str("png").orEmpty()),
+                            (msg.num("hx") ?: 0).toInt(), (msg.num("hy") ?: 0).toInt(),
+                            (msg.num("w") ?: 32).toInt(), (msg.num("h") ?: 32).toInt(),
+                        )
+                    }.getOrNull()
                     "offer" -> PcOffer.parse(msg).takeIf { it.isNotEmpty() }?.let { _offers.trySend(it) }
                     "error" -> {
                         val problem = problemForCode(msg.str("code"))

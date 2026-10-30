@@ -17,10 +17,16 @@ static class Program
     ///   --service         служба «вход в Windows» (запускает Windows);
     ///   --desktop-helper  помощник службы на экране входа (запускает служба);
     ///   --install-service / --uninstall-service  установить или удалить службу (с правами администратора).
+    ///   --video-selftest файл  проверить кодировщик H.264 на ненастоящих кадрах.
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
+        // Проверка кодировщика видео на ненастоящих кадрах — экран не снимается.
+        var selfTest = Array.IndexOf(args, "--video-selftest");
+        if (selfTest >= 0 && selfTest + 1 < args.Length)
+            return VideoSelfTest.Run(args[selfTest + 1]);
+
         var options = ParseArgs(args);
 
         // Служба входа и её части: ни значка в трее, ни своего «единственного экземпляра».
@@ -48,6 +54,7 @@ static class Program
             return 0;
         }
 
+        AgentLog.Path = Path.Combine(options.DataDir, "agent.log");
         ApplicationConfiguration.Initialize();
 
         AgentHost host;

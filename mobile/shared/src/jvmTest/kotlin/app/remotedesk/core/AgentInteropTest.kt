@@ -228,6 +228,20 @@ class AgentInteropTest {
                 clip.ping()
                 assertTrue(inputLog.readText().contains("moveto 2400 450"))
                 clip.stopScreen()
+                // Видео H.264 (тоже ненастоящее): первый кадр ключевой, курсор приходит отдельно.
+                clip.startScreen(null, 800, video = true)
+                val keyFrame = withTimeout(10_000) { clip.video.receive() }
+                assertTrue(keyFrame.key)
+                assertEquals(16 to 8, keyFrame.width to keyFrame.height)
+                assertEquals(16 to 8, withTimeout(5_000) { clip.videoSize.filterNotNull().first() })
+                withTimeout(5_000) { clip.screenInfo.first { it?.codec == "h264" } }
+                val pointer = withTimeout(5_000) { clip.cursor.filterNotNull().first() }
+                assertEquals(0.5f, pointer.x)
+                assertTrue(pointer.visible)
+                assertTrue(withTimeout(5_000) { clip.cursorImage.filterNotNull().first() }.png.isNotEmpty())
+                clip.requestKeyFrame()
+                withTimeout(5_000) { while (!clip.video.receive().key) Unit }
+                clip.stopScreen()
                 // Звук: у агента с --input-log он ненастоящий (тон), колонки ПК не трогаются.
                 clip.startAudio(muteSpeakers = false)
                 val sound = withTimeout(5_000) { List(5) { clip.audio.receive() } }

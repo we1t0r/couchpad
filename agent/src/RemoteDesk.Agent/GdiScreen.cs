@@ -9,7 +9,7 @@ namespace RemoteDesk.Agent;
 /// Снимок экрана через GDI (BitBlt) с курсором. Просто и работает везде; игры в исключительном
 /// полноэкранном режиме могут показываться чёрными — их возьмёт захват через видеокарту позже.
 /// </summary>
-sealed class GdiScreen : IScreenSource
+sealed class GdiScreen : IScreenSource, IVideoSource
 {
     public IReadOnlyList<MonitorInfo> Monitors() =>
         Screen.AllScreens
@@ -23,6 +23,9 @@ sealed class GdiScreen : IScreenSource
         var monitors = Monitors();
         return new GdiCapture(monitors.FirstOrDefault(m => m.Id == monitorId) ?? monitors.First(m => m.Primary));
     }
+
+    /// <summary>Видео — через видеокарту (<see cref="DxgiVideo"/>); картинки JPEG остаются на крайний случай.</summary>
+    public IVideoCapture OpenVideo(MonitorInfo monitor, int maxWidth, int fps, int bitrate) => new DxgiVideo(monitor, maxWidth, fps, bitrate);
 
     sealed class GdiCapture(MonitorInfo monitor) : IScreenCapture
     {

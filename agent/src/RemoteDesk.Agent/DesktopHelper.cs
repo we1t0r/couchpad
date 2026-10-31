@@ -160,21 +160,40 @@ static class DesktopHelper
             }) { IsBackground = true, Name = "Рабочий стол" }.Start();
         }
 
+        string? lastResult;
+
         void Follow()
         {
             var input = OpenInputDesktop(0, false, GenericAll);
+            string result;
             if (input == 0)
-                return;
-            if (SetThreadDesktop(input))
+            {
+                result = "стол ввода не открыть, ошибка " + Marshal.GetLastWin32Error();
+            }
+            else if (SetThreadDesktop(input))
             {
                 if (desktop != 0)
                     CloseDesktop(desktop);
                 desktop = input;
+                result = "работаю на столе " + DesktopName(input);
             }
             else
             {
+                result = $"на стол {DesktopName(input)} не перейти, ошибка {Marshal.GetLastWin32Error()}";
                 CloseDesktop(input);
             }
+            // В журнал — только перемены: по ним видно, дошёл ли помощник до окна UAC или экрана блокировки.
+            if (result != lastResult)
+            {
+                SignInService.Log.Write("помощник: " + result);
+                lastResult = result;
+            }
+        }
+
+        static string DesktopName(nint handle)
+        {
+            var name = new char[64];
+            return GetUserObjectInformationW(handle, 2, name, name.Length * 2, out _) ? new string(name).TrimEnd('\0') : "?";
         }
 
         public void Post(Action work) => queue.Add(work);
@@ -241,6 +260,9 @@ static class DesktopHelper
 
     [DllImport("user32.dll")]
     static extern bool CloseDesktop(nint desktop);
+
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    static extern bool GetUserObjectInformationW(nint handle, int index, [Out] char[] info, int length, out int needed);
 
     [DllImport("kernel32.dll")]
     static extern bool GetNamedPipeClientSessionId(nint pipe, out uint session);

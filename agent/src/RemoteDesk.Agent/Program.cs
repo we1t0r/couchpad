@@ -177,8 +177,21 @@ static class Program
             audio.RestoreAfterCrash();
             var bridge = DesktopHelper.Client();
             var session = Sessions.Current;
+            var wasSecure = false;
             desktop = new LockAwareDesktop(new WindowsInput(), new GdiScreen(), bridge, bridge,
-                Sessions.Cached(() => Sessions.IsLocked(session) || bridge.SecureDesktop()));
+                Sessions.Cached(() =>
+                {
+                    var secure = Sessions.IsLocked(session) || bridge.SecureDesktop();
+                    // В журнал — каждое переключение: так видно, ушли ли экран и ввод к помощнику на время окна UAC.
+                    if (secure != wasSecure)
+                    {
+                        wasSecure = secure;
+                        AgentLog.Write(secure
+                            ? "блокировка или окно UAC — экран и ввод через помощника службы входа"
+                            : "обычный рабочий стол — экран и ввод свои");
+                    }
+                    return secure;
+                }));
         }
         return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input ?? (IInputSink?)desktop,
             Clipboard: input as IClipboard ?? new WinFormsClipboard(),

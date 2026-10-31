@@ -34,8 +34,9 @@ static class Sessions
             return false;
         try
         {
-            // WTSINFOEXW: Level, затем WTSINFOEX_LEVEL1_W { SessionId, SessionState, SessionFlags, ... }.
-            return bytes >= 16 && Marshal.ReadInt32(buffer, 0) == 1 && Marshal.ReadInt32(buffer, 12) == SessionStateLock;
+            // WTSINFOEXW: Level (4 байта), выравнивание до 8 (в структуре есть LARGE_INTEGER), затем
+            // WTSINFOEX_LEVEL1_W { SessionId @8, SessionState @12, SessionFlags @16, ... }.
+            return bytes >= 20 && Marshal.ReadInt32(buffer, 0) == 1 && Marshal.ReadInt32(buffer, 16) == SessionStateLock;
         }
         finally
         {

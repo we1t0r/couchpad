@@ -136,6 +136,10 @@ public sealed class DesktopBridgeServer(IInputSink input, IScreenSource screen, 
             case "capture":
                 DesktopBridge.Write(pipe, CaptureReply(msg, captures));
                 return;
+            case "secure":
+                // На экране защищённый стол (блокировка, вход, окно UAC) — агенту пора идти через помощника.
+                DesktopBridge.Write(pipe, new[] { allowed() ? (byte)1 : (byte)0 });
+                return;
         }
 
         if (!allowed())
@@ -259,6 +263,12 @@ public sealed class DesktopBridgeClient(Func<NamedPipeClientStream> createPipe, 
             msg[key] = value;
         Call(msg, reply: false);
     }
+
+    /// <summary>
+    /// Помощник видит на экране защищённый стол: блокировку, вход или окно UAC. Сам агент пользователя этого
+    /// надёжно не узнает — Windows не пускает его туда даже посмотреть. Нет помощника — false.
+    /// </summary>
+    public bool SecureDesktop() => Call(new JsonObject { ["op"] = "secure" }, reply: true) is [1];
 
     public void Move(int dx, int dy) => Send("move", ("x", dx), ("y", dy));
     public void MoveTo(int x, int y) => Send("moveto", ("x", x), ("y", y));

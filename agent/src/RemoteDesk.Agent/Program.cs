@@ -168,7 +168,7 @@ static class Program
             }
         }
         // При записи ввода в файл (автотесты) — ненастоящий экран из агента, настоящий не снимаем.
-        // Иначе — настоящие экран и ввод, а пока компьютер заблокирован — через помощника службы входа.
+        // Иначе — настоящие экран и ввод, а пока компьютер заблокирован или открыто окно UAC — через помощника службы входа.
         LockAwareDesktop? desktop = null;
         WasapiAudio? audio = null;
         if (input is null)
@@ -177,7 +177,8 @@ static class Program
             audio.RestoreAfterCrash();
             var bridge = DesktopHelper.Client();
             var session = Sessions.Current;
-            desktop = new LockAwareDesktop(new WindowsInput(), new GdiScreen(), bridge, bridge, Sessions.Cached(() => Sessions.IsLocked(session)));
+            desktop = new LockAwareDesktop(new WindowsInput(), new GdiScreen(), bridge, bridge,
+                Sessions.Cached(() => Sessions.IsLocked(session) || bridge.SecureDesktop()));
         }
         return new AgentOptions(dataDir, port, Mdns: !loopback, Loopback: loopback, Input: input ?? (IInputSink?)desktop,
             Clipboard: input as IClipboard ?? new WinFormsClipboard(),

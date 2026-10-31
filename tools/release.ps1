@@ -11,7 +11,7 @@ $publish = Join-Path $dist "publish"
 Remove-Item $publish -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Агент $version…"
-& dotnet publish (Join-Path $root "agent\src\RemoteDesk.Agent\RemoteDesk.Agent.csproj") -c Release -o $publish -nologo -v q
+& dotnet publish (Join-Path $root "agent\src\RemoteDesk.Agent\RemoteDesk.Agent.csproj") -c Release -o $publish -nologo -v q -nodeReuse:false
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish: код $LASTEXITCODE" }
 # Тот же файл: с «Setup» в имени он открывает окно установки.
 Copy-Item (Join-Path $publish "Couchpad.exe") (Join-Path $dist "Couchpad-Setup-$version.exe") -Force
@@ -19,7 +19,7 @@ Copy-Item (Join-Path $publish "Couchpad.exe") (Join-Path $dist "Couchpad-Setup-$
 Write-Host "Приложение…"
 if (-not (Test-Path (Join-Path $env:USERPROFILE ".couchpad\signing.properties"))) { throw "Нет ключа подписи: %USERPROFILE%\.couchpad\signing.properties" }
 if (-not $env:JAVA_HOME) { $env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User") }
-& (Join-Path $root "mobile\gradlew.bat") -p (Join-Path $root "mobile") :androidApp:assembleRelease -q
+& (Join-Path $root "mobile\gradlew.bat") -p (Join-Path $root "mobile") :androidApp:assembleRelease -q --no-daemon
 if ($LASTEXITCODE -ne 0) { throw "gradle: код $LASTEXITCODE" }
 Copy-Item (Join-Path $root "mobile\androidApp\build\outputs\apk\release\androidApp-release.apk") (Join-Path $dist "Couchpad-$version.apk") -Force
 

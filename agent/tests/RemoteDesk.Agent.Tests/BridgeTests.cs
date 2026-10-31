@@ -38,10 +38,12 @@ public sealed class BridgeTests
             Assert.Equal((16, 9), (frame!.Width, frame.Height));
             Assert.Null(capture.Capture(800, 70, force: false));
             Assert.Equal(["moveto 10 20", "button left down", "text 1234\n"], helperInput.Lines);
+            Assert.True(client.SecureDesktop()); // блокировка или окно UAC — агент идёт через помощника
 
             // Компьютер разблокирован — помощник не нажимает и не показывает.
             allowed = false;
             client.Key(0x41, true);
+            Assert.False(client.SecureDesktop());
             Assert.Throws<InvalidOperationException>(() => capture.Capture(800, 70, force: true));
             Assert.Equal(3, helperInput.Lines.Count);
         }
@@ -54,6 +56,7 @@ public sealed class BridgeTests
         client.Move(1, 1);
         Assert.False(client.Available);
         Assert.Empty(client.Monitors());
+        Assert.False(client.SecureDesktop());
         Assert.Throws<InvalidOperationException>(() => client.Open(null));
     }
 

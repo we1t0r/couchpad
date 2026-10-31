@@ -12,7 +12,7 @@ namespace RemoteDesk.Agent;
 /// <list type="bullet">
 /// <item>Пока в Windows никто не вошёл (или компьютер заблокирован) и агента пользователя нет — сам принимает телефоны:
 /// экран, нажатия и питание, без файлов и буфера обмена.</item>
-/// <item>Пока компьютер заблокирован, а агент пользователя работает — снимает экран блокировки и нажимает туда
+/// <item>Пока компьютер заблокирован или открыто окно UAC, а агент пользователя работает — снимает этот экран и нажимает туда
 /// по его просьбе (<see cref="DesktopBridgeServer"/>).</item>
 /// </list>
 /// На открытом рабочем столе пользователя помощник ничего не делает — там работает обычный агент.
@@ -26,8 +26,8 @@ static class DesktopHelper
         log($"помощник: сеанс {session}, папка {dataDir}");
 
         var desktop = new DesktopThread();
-        // Можно, только пока никто не вошёл или компьютер заблокирован.
-        var allowed = Sessions.Cached(() => !Sessions.HasUser(session) || Sessions.IsLocked(session));
+        // Можно, только пока никто не вошёл, компьютер заблокирован или на экране окно UAC (защищённый стол).
+        var allowed = Sessions.Cached(() => !Sessions.HasUser(session) || Sessions.IsLocked(session) || !Sessions.OnUserDesktop());
         var input = new DesktopInput(desktop, new WindowsInput(), allowed);
         var screen = new DesktopScreen(desktop, new GdiScreen(), allowed);
         var userAgent = SendToPhone.AgentMutex(dataDir);
@@ -60,7 +60,7 @@ static class DesktopHelper
             var shouldHost = !agentRunning && allowed();
             // Что видит помощник — в журнал при каждой смене: по нему видно, почему он принимает телефоны или нет.
             var state = $"вошёл пользователь: {Sessions.HasUser(session)}, заблокирован: {Sessions.IsLocked(session)}, "
-                        + $"агент пользователя: {agentRunning}, принимать телефоны: {shouldHost}";
+                        + $"стол пользователя: {Sessions.OnUserDesktop()}, агент пользователя: {agentRunning}, принимать телефоны: {shouldHost}";
             if (state != lastState)
             {
                 log("помощник: " + state);

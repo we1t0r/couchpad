@@ -43,6 +43,40 @@ static class Sessions
         }
     }
 
+    /// <summary>
+    /// Ввод сейчас идёт на обычный рабочий стол пользователя («Default»). Нет — значит, на экране защищённый стол
+    /// Winlogon: окно UAC, блокировка или вход. Обычной программе Windows его даже открыть не даёт, а помощнику
+    /// службы (система) — даёт, и тот видит его имя.
+    /// </summary>
+    public static bool OnUserDesktop()
+    {
+        var desktop = OpenInputDesktop(0, false, DesktopReadObjects);
+        if (desktop == 0)
+            return false;
+        try
+        {
+            var name = new char[64];
+            return GetUserObjectInformationW(desktop, UoiName, name, name.Length * 2, out _)
+                   && new string(name).TrimEnd('\0').Equals("Default", StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            CloseDesktop(desktop);
+        }
+    }
+
+    const uint DesktopReadObjects = 0x0001;
+    const int UoiName = 2;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    static extern nint OpenInputDesktop(uint flags, bool inherit, uint access);
+
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    static extern bool GetUserObjectInformationW(nint handle, int index, [Out] char[] info, int length, out int needed);
+
+    [DllImport("user32.dll")]
+    static extern bool CloseDesktop(nint desktop);
+
     /// <summary>Проверка не чаще раза в 300 мс: её спрашивают на каждое движение мыши.</summary>
     public static Func<bool> Cached(Func<bool> check)
     {

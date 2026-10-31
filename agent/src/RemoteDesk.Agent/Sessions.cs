@@ -79,24 +79,7 @@ static class Sessions
     static extern bool CloseDesktop(nint desktop);
 
     /// <summary>Проверка не чаще раза в 300 мс: её спрашивают на каждое движение мыши.</summary>
-    public static Func<bool> Cached(Func<bool> check)
-    {
-        var gate = new Lock();
-        long at = long.MinValue;
-        var value = false;
-        return () =>
-        {
-            lock (gate)
-            {
-                if (Environment.TickCount64 - at > 300)
-                {
-                    value = check();
-                    at = Environment.TickCount64;
-                }
-                return value;
-            }
-        };
-    }
+    public static Func<bool> Cached(Func<bool> check) => Core.CachedCheck.Create(check);
 
     [DllImport("kernel32.dll")]
     static extern uint WTSGetActiveConsoleSessionId();

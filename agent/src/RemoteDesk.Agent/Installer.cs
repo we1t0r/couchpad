@@ -230,6 +230,9 @@ static class Installer
 
         var exe = Path.Combine(WithAppFolder(dir), ExeName);
         Autostart.SetFor(exe, autostart);
+        // Сначала — переезд старой папки данных (прежняя сборка уже закрыта): создай мы новую папку раньше,
+        // программа сочла бы переезд сделанным и завела новый сертификат — телефоны перестали бы её узнавать.
+        AgentOptions.MoveLegacyDataDir();
         // Решение об автозапуске принято здесь — первый запуск программы его не меняет.
         Directory.CreateDirectory(dataDir);
         File.WriteAllText(Path.Combine(dataDir, "autostart-set"), "");

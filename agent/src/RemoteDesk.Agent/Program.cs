@@ -86,6 +86,8 @@ static class Program
             return 1;
         }
 
+        AgentLog.Write($"агент {Protocol.AgentVersion} запущен: ПК {host.Identity.Id[..8]}, ключ {host.Identity.Fingerprint[..8]}, порт {host.Server.Port}, папка {options.DataDir}");
+
         // Для автотестов клиента: записать ссылку сопряжения в файл (в режиме --loopback — с адресом 127.0.0.1).
         var linkIndex = Array.IndexOf(args, "--dev-link");
         if (linkIndex >= 0 && linkIndex + 1 < args.Length)

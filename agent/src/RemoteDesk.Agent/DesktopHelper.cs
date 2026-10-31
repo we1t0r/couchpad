@@ -52,22 +52,35 @@ static class DesktopHelper
 
         AgentHost? host = null;
         var retryAt = 0L;
+        string? lastState = null;
+        log("помощник: жду, когда нужен");
         while (true)
         {
-            var shouldHost = !MutexExists(userAgent) && allowed();
+            var agentRunning = MutexExists(userAgent);
+            var shouldHost = !agentRunning && allowed();
+            // Что видит помощник — в журнал при каждой смене: по нему видно, почему он принимает телефоны или нет.
+            var state = $"вошёл пользователь: {Sessions.HasUser(session)}, заблокирован: {Sessions.IsLocked(session)}, "
+                        + $"агент пользователя: {agentRunning}, принимать телефоны: {shouldHost}";
+            if (state != lastState)
+            {
+                log("помощник: " + state);
+                lastState = state;
+            }
             if (shouldHost && host is null && Environment.TickCount64 >= retryAt)
             {
-                var next = new AgentHost(new AgentOptions(dataDir, port, Input: input, Clipboard: new NullClipboard(), Screen: screen, SignIn: true));
+                AgentHost? next = null;
                 try
                 {
+                    log("помощник: запускаю сервер на порту " + port);
+                    next = new AgentHost(new AgentOptions(dataDir, port, Input: input, Clipboard: new NullClipboard(), Screen: screen, SignIn: true));
                     next.StartAsync().GetAwaiter().GetResult();
                     host = next;
-                    log("помощник: принимаю телефоны на экране входа");
+                    log($"помощник: принимаю телефоны на экране входа (ПК {next.Identity.Id[..8]}, ключ {next.Identity.Fingerprint[..8]})");
                 }
                 catch (Exception e)
                 {
-                    next.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
-                    log("помощник: сервер не запустился: " + e.Message);
+                    next?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+                    log("помощник: сервер не запустился: " + e);
                     retryAt = Environment.TickCount64 + 5000;
                 }
             }

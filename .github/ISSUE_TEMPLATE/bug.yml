@@ -1,0 +1,67 @@
+name: Сообщить об ошибке / Bug report
+description: Что-то не работает или работает не так
+labels: ["ошибка"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо, что пишете! Чем подробнее, тем быстрее получится найти и исправить.
+        Не выкладывайте сюда пароли, свой IP-адрес и QR-код сопряжения.
+  - type: textarea
+    id: what
+    attributes:
+      label: Что случилось
+      description: Что делали, что ожидали увидеть и что произошло на самом деле.
+      placeholder: |
+        1. Открыл вкладку «Экран»
+        2. Нажал кнопку звука
+        3. Звука нет, хотя на компьютере музыка играет
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Где проблема
+      options:
+        - Приложение на телефоне
+        - Программа на компьютере
+        - Установщик
+        - Не знаю
+    validations:
+      required: true
+  - type: dropdown
+    id: network
+    attributes:
+      label: Как подключены
+      options:
+        - Дома, по Wi-Fi
+        - Через интернет (белый IP / DDNS)
+        - Через VPN (Tailscale и т. п.)
+        - Не подключается вообще
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия Couchpad
+      description: На телефоне — «Настройки» Android → «Приложения» → Couchpad; на компьютере — «Параметры Windows» → «Приложения» → Couchpad.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Телефон и версия Android
+      placeholder: "Samsung Galaxy A52, Android 14"
+  - type: input
+    id: windows
+    attributes:
+      label: Версия Windows
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Скриншоты или журнал
+      description: |
+        Можно перетащить сюда картинки. Журнал программы на ПК — файл agent.log в папке %APPDATA%\Couchpad
+        (вставьте в адресную строку Проводника). Перед отправкой проверьте, что в нём нет того, чем не хочется делиться.

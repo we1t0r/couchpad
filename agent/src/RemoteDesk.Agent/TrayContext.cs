@@ -40,6 +40,7 @@ sealed class TrayContext : ApplicationContext
         };
         menu.Items.Add(signInItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Поддержать проект…", null, (_, _) => OpenLink(Links.Donate));
         menu.Items.Add("Выход", null, (_, _) => ExitThread());
 
         // Контекст синхронизации WinForms появляется после создания первого элемента управления.
@@ -233,6 +234,18 @@ sealed class TrayContext : ApplicationContext
             devicesForm = new DevicesForm(host, ShowPairing);
         devicesForm.Show();
         devicesForm.Activate();
+    }
+
+    static void OpenLink(string url)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            MessageBox.Show("Не удалось открыть браузер. Ссылка: " + url, "Couchpad");
+        }
     }
 
     protected override void ExitThreadCore()

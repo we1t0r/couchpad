@@ -33,6 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.ui.unit.dp
 import app.remotedesk.core.ButtonSize
 import app.remotedesk.core.TouchpadSettings
@@ -144,6 +146,17 @@ fun SettingsScreen(
                 enabled = settings != defaults,
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
             ) { Text(stringResource(Res.string.settings_reset)) }
+
+            // Ненавязчиво: одна строка в самом низу, без всплывающих окон и напоминаний.
+            val uri = LocalUriHandler.current
+            TextButton(
+                onClick = { runCatching { uri.openUri(DONATE_URL) } },
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.settings_donate))
+            }
         }
     }
 
@@ -171,6 +184,9 @@ fun SettingsScreen(
         )
     }
 }
+
+/** Страница пожертвований на Boosty. */
+const val DONATE_URL = "https://boosty.to/we1t0r"
 
 @Composable
 private fun Header(text: StringResource) {

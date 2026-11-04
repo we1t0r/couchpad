@@ -1,0 +1,17 @@
+name: Предложить идею / Feature request
+description: Чего не хватает, что сделать удобнее
+labels: ["идея"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Идея
+      description: Что хотелось бы и зачем — в каком случае это пригодится.
+      placeholder: "Хочу кнопки для игр на вкладке «Экран», чтобы ходить на WASD с телефона"
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: Как это могло бы выглядеть
+      description: Необязательно. Можно приложить набросок или скриншот.

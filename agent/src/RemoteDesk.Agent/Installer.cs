@@ -115,7 +115,7 @@ static class Installer
                 key.SetValue("DisplayIcon", exe);
                 key.SetValue("InstallLocation", dir);
                 key.SetValue("UninstallString", $"\"{exe}\" --uninstall");
-                key.SetValue("URLInfoAbout", "https://github.com/");
+                key.SetValue("URLInfoAbout", Links.Repo);
                 key.SetValue("NoModify", 1, RegistryValueKind.DWord);
                 key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
                 key.SetValue("EstimatedSize", (int)(new FileInfo(exe).Length / 1024), RegistryValueKind.DWord);

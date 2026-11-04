@@ -16,7 +16,8 @@ public sealed record AgentOptions(
     IClipboard? Clipboard = null,
     IScreenSource? Screen = null,
     bool SignIn = false,
-    IAudioSource? Audio = null)
+    IAudioSource? Audio = null,
+    string? Name = null)
 {
     /// <summary>Что можно телефону с экрана входа Windows: файлы и буфер обмена — только после входа.</summary>
     public static readonly string[] SignInPermissions = ["input", "power", "screen"];
@@ -50,7 +51,7 @@ public sealed record AgentOptions(
 public sealed class AgentHost(AgentOptions options) : IAsyncDisposable
 {
     public string DataDir => options.DataDir;
-    public AgentIdentity Identity { get; } = AgentIdentity.LoadOrCreate(options.DataDir);
+    public AgentIdentity Identity { get; } = AgentIdentity.LoadOrCreate(options.DataDir, options.Name);
     public PairingStore Devices { get; } = new(options.DataDir);
     public PairingSecrets Secrets { get; } = new();
     public AgentServer Server { get; private set; } = null!;

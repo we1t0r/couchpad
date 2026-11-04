@@ -391,6 +391,13 @@ private fun MouseButtonPad(input: RemoteInput, button: MouseButton, buzz: () -> 
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = if (pressed) colors.onPrimary else colors.onSurface)
+        Text(
+            label,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (pressed) colors.onPrimary else colors.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
     }
 }

@@ -19,7 +19,7 @@ object Protocol {
     const val VERSION = 1
     const val DEFAULT_PORT = 47800
     const val SERVICE_TYPE = "_couchpad._tcp"
-    const val APP_VERSION = "0.1.0"
+    const val APP_VERSION = "1.0.0"
 
     object Errors {
         const val BAD_SECRET = "bad_secret"

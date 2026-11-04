@@ -18,6 +18,7 @@ static class Program
     ///   --desktop-helper  помощник службы на экране входа (запускает служба);
     ///   --install-service / --uninstall-service  установить или удалить службу (с правами администратора).
     ///   --video-selftest файл  проверить кодировщик H.264 на ненастоящих кадрах.
+    ///   --name имя        своё имя ПК (для снимков экрана и тестов);
     ///   --setup (или имя файла Couchpad-Setup.exe)  окно установки; --uninstall  удаление.
     /// </summary>
     [STAThread]
@@ -144,6 +145,7 @@ static class Program
         var port = Protocol.DefaultPort;
         var loopback = false;
         var signIn = false;
+        string? name = null;
         IInputSink? input = null;
         for (var i = 0; i < args.Length; i++)
         {
@@ -158,6 +160,9 @@ static class Program
                 case "--port" when i + 1 < args.Length && int.TryParse(args[i + 1], out var p):
                     port = p;
                     i++;
+                    break;
+                case "--name" when i + 1 < args.Length:
+                    name = args[++i];
                     break;
                 case "--loopback":
                     loopback = true;
@@ -198,6 +203,8 @@ static class Program
             Screen: desktop,
             Audio: audio,
             // Агент как на экране входа — только для автотестов приложения, вместе с --input-log.
-            SignIn: signIn && input is not null);
+            SignIn: signIn && input is not null,
+            // Своё имя ПК — для снимков экрана и тестов, чтобы не светить настоящее.
+            Name: name);
     }
 }

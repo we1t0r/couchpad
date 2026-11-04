@@ -128,7 +128,7 @@ class ScreenshotTest {
         val linkFile = File(dataDir, "link.txt")
         val agent = ProcessBuilder(
             exe.path, "--loopback", "--port", "47896", "--data-dir", agentDir.path,
-            "--dev-link", linkFile.path, "--input-log", File(dataDir, "input.log").path,
+            "--dev-link", linkFile.path, "--input-log", File(dataDir, "input.log").path, "--name", "DESKTOP-ABC123",
         ).redirectErrorStream(true).start()
         try {
             val deadline = System.currentTimeMillis() + 20_000

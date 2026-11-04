@@ -74,8 +74,8 @@
     <string name="tab_touchpad">Touchpad</string>
     <string name="tab_keyboard">Keyboard</string>
     <string name="tab_info">About PC</string>
-    <string name="button_left">Left</string>
-    <string name="button_right">Right</string>
+    <string name="button_left">Left mouse button</string>
+    <string name="button_right">Right mouse button</string>
     <string name="button_middle">Middle</string>
     <string name="touchpad_hint">Slide a finger to move the pointer. Tap to click, two fingers to scroll, tap with two fingers for a right click.</string>
     <string name="scroll_strip">Scroll strip</string>

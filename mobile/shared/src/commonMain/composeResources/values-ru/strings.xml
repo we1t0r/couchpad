@@ -74,8 +74,8 @@
     <string name="tab_touchpad">Тачпад</string>
     <string name="tab_keyboard">Клавиши</string>
     <string name="tab_info">О ПК</string>
-    <string name="button_left">Левая</string>
-    <string name="button_right">Правая</string>
+    <string name="button_left">Левая кнопка мыши</string>
+    <string name="button_right">Правая кнопка мыши</string>
     <string name="button_middle">Средняя</string>
     <string name="touchpad_hint">Водите пальцем — двигается курсор. Тап — щелчок, двумя пальцами — прокрутка, тап двумя — правая кнопка.</string>
     <string name="scroll_strip">Полоса прокрутки</string>

@@ -63,7 +63,7 @@ kotlin {
 }
 
 android {
-    namespace = "app.remotedesk.shared"
+    namespace = "app.couchpad.shared"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
     defaultConfig { minSdk = 26 }
@@ -74,14 +74,14 @@ android {
 }
 
 compose.resources {
-    packageOfResClass = "app.remotedesk.resources"
+    packageOfResClass = "app.couchpad.resources"
 }
 
 // Тест совместимости запускает собранный агент для Windows, если он есть.
 tasks.named<Test>("jvmTest") {
-    val agent = rootProject.projectDir.resolve("../agent/src/RemoteDesk.Agent/bin/Debug/net10.0-windows/Couchpad.exe")
-    systemProperty("rdesk.agentExe", agent.canonicalPath)
+    val agent = rootProject.projectDir.resolve("../agent/src/Couchpad.Agent/bin/Debug/net10.0-windows/Couchpad.exe")
+    systemProperty("couchpad.agentExe", agent.canonicalPath)
     // -Pshots=папка — куда ScreenshotTest сохранит снимки экранов; без него тест пропускается.
-    systemProperty("rdesk.shots", (findProperty("shots") ?: "").toString())
+    systemProperty("couchpad.shots", (findProperty("shots") ?: "").toString())
     testLogging { events("passed", "skipped", "failed"); showStandardStreams = true }
 }

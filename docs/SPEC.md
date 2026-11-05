@@ -1,4 +1,4 @@
-# RemoteDesk — спецификация продукта
+# Couchpad — спецификация продукта
 
 > Рабочее название. Финальное имя выбрать до публикации (проверить Google Play и товарные знаки).
 
@@ -175,7 +175,7 @@ Android-приложение и программа-агент для Windows, к
 - **Без рекламы, без слежки, без обязательного аккаунта.** Аналитики нет; отчёты о сбоях — только если пользователь сам нажал «Отправить».
 - **Где брать:**
   - Android: GitHub Releases (подписанный `.apk`), **F-Droid**, позже Obtainium/IzzyOnDroid. Google Play — не планируем (если передумаем, код к этому готов).
-  - Windows: установщик в GitHub Releases, **winget** (`winget install RemoteDesk`), позже Microsoft Store.
+  - Windows: установщик в GitHub Releases, **winget** (`winget install Couchpad`), позже Microsoft Store.
 - **Подпись Windows-установщика:** бесплатная подпись для open-source проектов через SignPath Foundation, чтобы SmartScreen не пугал «неизвестным издателем».
 - **Пожертвования:** GitHub Sponsors, Boosty, Open Collective (прозрачные расходы на сервер), крипта. Кнопка «Поддержать проект» в приложении и агенте — ненавязчиво, в разделе «О программе», без всплывающих окон.
 - **Для разработчиков:** CONTRIBUTING.md, описание протокола в `protocol/`, сборка одной командой, CI на GitHub Actions (сборка и тесты на каждый PR), переводы через Weblate.

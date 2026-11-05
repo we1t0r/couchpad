@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "app.remotedesk.android"
+    namespace = "app.couchpad.android"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 

@@ -4,14 +4,14 @@
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $dist = Join-Path $root "dist"
-$version = ([xml](Get-Content (Join-Path $root "agent\src\RemoteDesk.Agent\RemoteDesk.Agent.csproj"))).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+$version = ([xml](Get-Content (Join-Path $root "agent\src\Couchpad.Agent\Couchpad.Agent.csproj"))).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
 
 New-Item -ItemType Directory -Force $dist | Out-Null
 $publish = Join-Path $dist "publish"
 Remove-Item $publish -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Агент $version…"
-& dotnet publish (Join-Path $root "agent\src\RemoteDesk.Agent\RemoteDesk.Agent.csproj") -c Release -o $publish -nologo -v q -nodeReuse:false
+& dotnet publish (Join-Path $root "agent\src\Couchpad.Agent\Couchpad.Agent.csproj") -c Release -o $publish -nologo -v q -nodeReuse:false
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish: код $LASTEXITCODE" }
 # Тот же файл: с «Setup» в имени он открывает окно установки.
 Copy-Item (Join-Path $publish "Couchpad.exe") (Join-Path $dist "Couchpad-Setup-$version.exe") -Force

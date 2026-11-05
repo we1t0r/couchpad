@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/RemoteDesk.Agent.Core/RemoteDesk.Agent.Core.csproj" />
-    <Project Path="src/RemoteDesk.Agent/RemoteDesk.Agent.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/RemoteDesk.Agent.Tests/RemoteDesk.Agent.Tests.csproj" />
-  </Folder>
-</Solution>

@@ -1,4 +1,4 @@
-﻿rootProject.name = "RemoteDesk"
+﻿rootProject.name = "Couchpad"
 
 pluginManagement {
     repositories {

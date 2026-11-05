@@ -24,7 +24,7 @@
 - **Вход в Windows с телефона** — экран входа и блокировки, окно «Разрешить изменения» (UAC) — по желанию.
 - **Через интернет** — по белому IP или DDNS с пробросом порта на роутере, или через свой VPN (например, Tailscale).
 
-Подключение — по QR-коду, один раз. Связь зашифрована, компьютер слушается только сопряжённые телефоны.
+Подключение — по QR-коду, один раз. Связь зашифрована, компьютер принимает команды только от сопряжённых телефонов.
 
 ## Установка
 
@@ -50,8 +50,8 @@ Couchpad бесплатный и останется таким. Если он в
 Агент (нужен .NET 10 SDK):
 
 ```bash
-dotnet build agent/RemoteDesk.Agent.slnx
-dotnet test agent/RemoteDesk.Agent.slnx
+dotnet build agent/Couchpad.Agent.slnx
+dotnet test agent/Couchpad.Agent.slnx
 ```
 
 Приложение для Android (нужны JDK 17+ и Android SDK 36; путь к SDK — в `ANDROID_HOME` или `mobile/local.properties`):

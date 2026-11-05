@@ -112,7 +112,7 @@ public sealed class ShareStore
 public sealed class FileService(ShareStore shares)
 {
     public const string InboxRoot = "inbox";
-    public const string PartSuffix = ".rdpart";
+    public const string PartSuffix = ".couchpad-part";
 
     /// <summary>Файл пришёл с телефона в «Входящие» («Поделиться → на ПК»).</summary>
     public event Action<string>? Received;
@@ -241,8 +241,8 @@ public sealed class FileService(ShareStore shares)
     public enum Conflict { Ask, Replace, Rename }
 
     /// <summary>
-    /// Начало приёма: решаем, под каким именем сохранить (конфликт имён), и резервируем его файлом «имя.rdpart».
-    /// Если такой «.rdpart» уже есть — это докачка, возвращаем, сколько уже принято.
+    /// Начало приёма: решаем, под каким именем сохранить (конфликт имён), и резервируем его файлом «имя.couchpad-part».
+    /// Если такой «.couchpad-part» уже есть — это докачка, возвращаем, сколько уже принято.
     /// </summary>
     public (string Name, long Have) BeginUpload(string rootId, string? folder, string? name, Conflict conflict)
     {
@@ -268,7 +268,7 @@ public sealed class FileService(ShareStore shares)
 
     /// <summary>
     /// Приём данных с места [offset] (оно должно совпасть с уже принятым — иначе 409 с правильным числом).
-    /// Когда принято [size] байт, «.rdpart» становится настоящим файлом. Возвращает, сколько принято всего.
+    /// Когда принято [size] байт, «.couchpad-part» становится настоящим файлом. Возвращает, сколько принято всего.
     /// </summary>
     public async Task<long> UploadAsync(string rootId, string? folder, string? name, long size, long offset, Stream body, CancellationToken ct)
     {

@@ -45,7 +45,6 @@ Couchpad бесплатный и останется таким. Если он в
 - `agent/` — программа для Windows (C# / .NET 10, WinForms в трее, ASP.NET Core Kestrel).
 - `mobile/` — приложение (Kotlin Multiplatform + Compose Multiplatform): сейчас Android, позже iPhone.
 - `protocol/PROTOCOL.md` — как приложение и программа на ПК общаются.
-- `docs/SPEC.md` — замысел и этапы.
 
 Агент (нужен .NET 10 SDK):
 

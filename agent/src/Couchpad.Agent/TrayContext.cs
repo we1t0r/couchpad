@@ -62,6 +62,16 @@ sealed class TrayContext : ApplicationContext
         host.Server.Paired += device => ui.Post(_ =>
             tray.ShowBalloonTip(4000, "Телефон подключён", $"«{device.Name}» теперь может управлять компьютером.", ToolTipIcon.Info), null);
 
+        // Windows завершает сеанс и закрывает нас. Если она потом передумает (какая-то программа не закрылась),
+        // служба входа по этой отметке запустит агента снова. «Выход» из меню отметку не ставит.
+        Microsoft.Win32.SystemEvents.SessionEnded += (_, _) =>
+        {
+            var run = host.Power.LastRun;
+            var fromPhone = run is { Action: PowerAction.Shutdown or PowerAction.Restart or PowerAction.SignOut } r
+                            && DateTimeOffset.UtcNow - r.At < TimeSpan.FromMinutes(5);
+            Revive.Mark(host.DataDir, fromPhone ? run!.Value.Action : null);
+        };
+
         // Таймер питания: пункт меню для отмены, уведомление при постановке, окно за минуту до срабатывания.
         cancelTimerItem = new ToolStripMenuItem("", null, (_, _) => host.Power.Cancel()) { Visible = false };
         menu.Items.Insert(0, cancelTimerItem);

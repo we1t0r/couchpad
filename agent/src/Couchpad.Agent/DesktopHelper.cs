@@ -52,6 +52,7 @@ static class DesktopHelper
 
         AgentHost? host = null;
         var retryAt = 0L;
+        var reviveAt = 0L;
         string? lastState = null;
         log("помощник: жду, когда нужен");
         while (true)
@@ -90,6 +91,27 @@ static class DesktopHelper
                 host.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
                 host = null;
                 log("помощник: экран входа закрыт, телефоны принимает агент пользователя");
+            }
+
+            // Windows закрыла агента при перезагрузке или выключении и отменила их: сеанс жив, агента нет — запускаем снова.
+            if (!agentRunning && Environment.TickCount64 >= reviveAt)
+            {
+                reviveAt = Environment.TickCount64 + 5000;
+                if (Revive.Read(dataDir) is { } marker && Sessions.HasUser(session) && !Sessions.ShuttingDown
+                    && Revive.Due(marker.WrittenUtc, Sessions.LogonTimeUtc(session), DateTime.UtcNow))
+                {
+                    try
+                    {
+                        log("помощник: Windows закрыла агента и не выключилась — запускаю агента пользователя снова");
+                        AgentRevive.Start(session, dataDir, port);
+                    }
+                    catch (Exception e)
+                    {
+                        log("помощник: агент пользователя не запустился: " + e.Message);
+                    }
+                    // Агент при запуске сам снимает отметку; не запустился — следующая попытка через полминуты.
+                    reviveAt = Environment.TickCount64 + 30_000;
+                }
             }
             Thread.Sleep(500);
         }

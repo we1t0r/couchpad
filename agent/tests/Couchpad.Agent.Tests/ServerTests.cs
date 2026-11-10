@@ -119,6 +119,37 @@ public sealed class ServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Notice_reaches_each_phone_once_connected_or_connecting_later()
+    {
+        var token = await PairAsync();
+        using var online = await ConnectAsync();
+        await SendAsync(online, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        await ReceiveAsync(online);
+        var token2 = await PairAsync("phone-2");
+
+        await host.Server.NoticeOnConnectAsync(Revive.AbortedMessage(PowerAction.Restart), TimeSpan.FromMinutes(5));
+
+        // Подключённый телефон получает сразу.
+        var now = await ReceiveAsync(online);
+        Assert.Equal(Protocol.Errors.PowerAborted, now.Str("code"));
+        Assert.Equal("restart", now.Str("a"));
+        Assert.Contains("отменила перезагрузку", now.Str("msg"));
+
+        // Тот, что подключится позже, — после welcome.
+        using var later = await ConnectAsync();
+        await SendAsync(later, Message.Build("hello", ("deviceId", "phone-2"), ("token", token2)));
+        Assert.Equal("welcome", (await ReceiveAsync(later)).Str("t"));
+        Assert.Equal(Protocol.Errors.PowerAborted, (await ReceiveAsync(later)).Str("code"));
+
+        // И только один раз: при переподключении первого телефона сообщения уже нет.
+        using var again = await ConnectAsync();
+        await SendAsync(again, Message.Build("hello", ("deviceId", "phone-1"), ("token", token)));
+        Assert.Equal("welcome", (await ReceiveAsync(again)).Str("t"));
+        await SendAsync(again, Message.Build("ping", ("n", 7)));
+        Assert.Equal("pong", (await ReceiveAsync(again)).Str("t"));
+    }
+
+    [Fact]
     public async Task Hello_with_wrong_token_is_rejected()
     {
         await PairAsync();

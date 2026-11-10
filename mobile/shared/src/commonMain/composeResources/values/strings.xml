@@ -180,6 +180,11 @@
     <string name="pw_force_on">Programs close without asking. Unsaved documents are lost — only use this if you are sure.</string>
     <string name="pw_timer_note">You can cancel the timer here in the app or on the computer — in the Couchpad icon menu.</string>
     <string name="pw_set_timer">Set timer</string>
+    <string name="pw_aborted_restart">The restart didn’t happen</string>
+    <string name="pw_aborted_shutdown">The computer didn’t shut down</string>
+    <string name="pw_aborted_signout">The sign-out didn’t happen</string>
+    <string name="pw_aborted_text">Windows cancelled it: some program on the computer didn’t close. Other programs may have closed.\n\nYou can retry with force: programs will close without asking, unsaved documents will be lost.</string>
+    <string name="pw_aborted_force">Retry with force</string>
 
     <string name="settings_power">Power</string>
     <string name="s_confirm_title">Ask before shutting down</string>

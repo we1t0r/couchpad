@@ -87,6 +87,17 @@ static class Program
 
         AgentLog.Write($"агент {Protocol.AgentVersion} запущен: ПК {host.Identity.Id[..8]}, ключ {host.Identity.Fingerprint[..8]}, порт {host.Server.Port}, папка {options.DataDir}");
 
+        // Отметка «агента закрыла Windows» своё отработала. Если нас по ней запустила служба входа, значит, перезагрузка
+        // или выключение не состоялись, — телефон, который их просил, должен об этом узнать.
+        var closed = Revive.Read(options.DataDir);
+        Revive.Clear(options.DataDir);
+        if (args.Contains(AgentRevive.Arg))
+        {
+            AgentLog.Write("агента запустила служба входа: Windows закрыла его, но не выключилась и не перезагрузилась");
+            if (closed?.Action is { } aborted)
+                _ = host.Server.NoticeOnConnectAsync(Revive.AbortedMessage(aborted), TimeSpan.FromMinutes(5));
+        }
+
         // Для автотестов клиента: записать ссылку сопряжения в файл (в режиме --loopback — с адресом 127.0.0.1).
         var linkIndex = Array.IndexOf(args, "--dev-link");
         if (linkIndex >= 0 && linkIndex + 1 < args.Length)

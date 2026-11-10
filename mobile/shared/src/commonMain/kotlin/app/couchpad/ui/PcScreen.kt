@@ -86,6 +86,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.couchpad.core.LinkState
+import app.couchpad.core.PowerAction
 import app.couchpad.core.Problem
 import app.couchpad.core.SavedPc
 import app.couchpad.core.WakeOnLan
@@ -256,6 +257,34 @@ private fun RemoteControl(
     // Ошибки агента (например, «гибернация выключена») — внизу экрана.
     LaunchedEffect(state.connection) {
         state.connection.notices.collect { snackbar.showSnackbar(it) }
+    }
+    // Windows начала перезагрузку или выключение и отменила — говорим об этом и предлагаем повторить принудительно.
+    val aborted by state.connection.powerAborted.collectAsState()
+    aborted?.let { action ->
+        AlertDialog(
+            onDismissRequest = state.connection::dismissPowerAborted,
+            title = {
+                Text(
+                    stringResource(
+                        when (action) {
+                            PowerAction.Restart -> Res.string.pw_aborted_restart
+                            PowerAction.SignOut -> Res.string.pw_aborted_signout
+                            else -> Res.string.pw_aborted_shutdown
+                        },
+                    ),
+                )
+            },
+            text = { Text(stringResource(Res.string.pw_aborted_text)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.connection.dismissPowerAborted()
+                    state.connection.power.run(action, force = true)
+                }) { Text(stringResource(Res.string.pw_aborted_force)) }
+            },
+            dismissButton = {
+                TextButton(onClick = state.connection::dismissPowerAborted) { Text(stringResource(Res.string.action_cancel)) }
+            },
+        )
     }
     // Файлы — по HTTPS на тот адрес, по которому сейчас есть связь.
     val files = remember(state.connection, pc) {

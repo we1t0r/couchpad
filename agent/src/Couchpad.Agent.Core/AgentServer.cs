@@ -102,6 +102,37 @@ public sealed class AgentServer(
             await session.SendAsync(text);
     }
 
+    readonly Lock noticeGate = new();
+    readonly HashSet<string> noticed = [];
+    string? notice;
+    DateTimeOffset noticeUntil;
+
+    /// <summary>
+    /// Сообщение, которое получит каждый телефон один раз: подключённые — сразу, остальные — при подключении,
+    /// пока не вышел срок. Так телефон узнаёт то, что случилось, пока связи не было.
+    /// </summary>
+    public async Task NoticeOnConnectAsync(string text, TimeSpan keep)
+    {
+        List<Session> now;
+        lock (noticeGate)
+        {
+            notice = text;
+            noticeUntil = DateTimeOffset.UtcNow + keep;
+            noticed.Clear();
+            now = sessions.Keys.Where(s => s.DeviceId is not null).ToList();
+            foreach (var s in now)
+                noticed.Add(s.DeviceId!);
+        }
+        foreach (var s in now)
+            await s.SendAsync(text);
+    }
+
+    string? TakeNotice(string deviceId)
+    {
+        lock (noticeGate)
+            return notice is not null && DateTimeOffset.UtcNow <= noticeUntil && noticed.Add(deviceId) ? notice : null;
+    }
+
     public IReadOnlyCollection<string> ConnectedDeviceIds =>
         sessions.Keys.Where(s => s.DeviceId is not null).Select(s => s.DeviceId!).Distinct().ToList();
 
@@ -230,6 +261,8 @@ public sealed class AgentServer(
         }
         if (waiting.Count > 0)
             _ = session.SendAsync(OfferMessage(waiting));
+        if (TakeNotice(device.DeviceId) is { } text)
+            _ = session.SendAsync(text);
         if (justPaired)
             Paired?.Invoke(device);
         ConnectionsChanged?.Invoke();

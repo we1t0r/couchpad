@@ -153,7 +153,7 @@ static class SignInService
                     throw new Win32Exception();
 
                 job = CreateJobObjectW(0, null);
-                var limits = new JobExtendedLimits { BasicLimitInformation = new JobBasicLimits { LimitFlags = KillOnJobClose } };
+                var limits = new JobExtendedLimits { BasicLimitInformation = new JobBasicLimits { LimitFlags = KillOnJobClose | BreakawayOk } };
                 SetInformationJobObject(job, JobObjectExtendedLimitInformation, ref limits, Marshal.SizeOf<JobExtendedLimits>());
 
                 var exe = Environment.ProcessPath!;
@@ -221,7 +221,8 @@ static class SignInService
     const int SecurityImpersonation = 2, TokenPrimary = 1, TokenSessionId = 12;
     const uint CreateSuspended = 0x4, CreateNoWindow = 0x08000000;
     const int JobObjectExtendedLimitInformation = 9;
-    const uint KillOnJobClose = 0x2000;
+    // BreakawayOk: помощник может запустить агента пользователя вне задания (AgentRevive), и тот переживёт помощника.
+    const uint KillOnJobClose = 0x2000, BreakawayOk = 0x0800;
 
     delegate void ServiceMainProc(int argc, nint argv);
     delegate int HandlerProc(int control, int eventType, nint eventData, nint context);

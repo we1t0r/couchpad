@@ -241,6 +241,18 @@ class AgentConnection private constructor(
     /** Ошибки агента, о которых стоит сказать пользователю (например, «гибернация выключена»). */
     val notices: SharedFlow<String> = _notices
 
+    private val _powerAborted = MutableStateFlow<PowerAction?>(null)
+
+    /**
+     * Windows начала выключение, перезагрузку или выход по просьбе телефона и отменила: какая-то программа не закрылась.
+     * Агент сообщает об этом, когда служба входа запустила его снова. null — ничего такого не было.
+     */
+    val powerAborted: StateFlow<PowerAction?> = _powerAborted
+
+    fun dismissPowerAborted() {
+        _powerAborted.value = null
+    }
+
     private fun enqueue(item: Any) {
         outbox.trySend(item)
     }
@@ -293,8 +305,11 @@ class AgentConnection private constructor(
                         // Ошибка, после которой агент закрывает соединение, — запоминаем её как причину.
                         if (problem == Problem.Revoked || problem == Problem.Incompatible)
                             reason = AgentException(problem, msg.str("msg"))
-                        else
-                            _notices.tryEmit(msg.str("msg") ?: msg.str("code").orEmpty())
+                        else {
+                            val aborted = PowerAction.parse(msg.str("a")).takeIf { msg.str("code") == "power_aborted" && it?.canForce == true }
+                            if (aborted != null) _powerAborted.value = aborted
+                            else _notices.tryEmit(msg.str("msg") ?: msg.str("code").orEmpty())
+                        }
                     }
                     "bye" -> reason = AgentException(Problem.Closed, msg.str("reason"))
                 }

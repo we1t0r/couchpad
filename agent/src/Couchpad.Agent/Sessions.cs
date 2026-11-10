@@ -44,6 +44,34 @@ static class Sessions
         }
     }
 
+    /// <summary>Когда в этот сеанс вошли в Windows (UTC); null — никто не вошёл или узнать не удалось.</summary>
+    public static DateTime? LogonTimeUtc(int session)
+    {
+        if (!WTSQuerySessionInformationW(0, (uint)session, WtsSessionInfoEx, out var buffer, out var bytes))
+            return null;
+        try
+        {
+            // WTSINFOEX_LEVEL1_W: … SessionFlags @16, WinStationName[33] @20, UserName[21] @86, DomainName[18] @128, LogonTime @168.
+            if (bytes < 176 || Marshal.ReadInt32(buffer, 0) != 1 || Marshal.ReadInt64(buffer, 168) is not (> 0 and var time))
+                return null;
+            return DateTime.FromFileTimeUtc(time);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return null;
+        }
+        finally
+        {
+            WTSFreeMemory(buffer);
+        }
+    }
+
+    /// <summary>Windows сейчас завершает этот сеанс (выключение, перезагрузка, выход).</summary>
+    public static bool ShuttingDown => GetSystemMetrics(0x2000 /* SM_SHUTTINGDOWN */) != 0;
+
+    [DllImport("user32.dll")]
+    static extern int GetSystemMetrics(int index);
+
     /// <summary>
     /// Ввод сейчас идёт на обычный рабочий стол пользователя («Default»). Нет — значит, на экране защищённый стол
     /// Winlogon: окно UAC, блокировка или вход. Обычной программе Windows его даже открыть не даёт, а помощнику

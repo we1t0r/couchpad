@@ -66,6 +66,9 @@ public sealed class PowerScheduler(IPowerSink sink, TimeProvider? time = null) :
 
     public PowerTimer? Current { get; private set; }
 
+    /// <summary>Последнее выполненное действие и когда — чтобы понять, что Windows закрыла агента из-за него.</summary>
+    public (PowerAction Action, DateTimeOffset At)? LastRun { get; private set; }
+
     /// <summary>Таймер поставлен, отменён или сработал.</summary>
     public event Action<PowerTimer?>? Changed;
 
@@ -153,6 +156,7 @@ public sealed class PowerScheduler(IPowerSink sink, TimeProvider? time = null) :
     {
         try
         {
+            LastRun = (action, time.GetUtcNow());
             sink.Execute(action, force, keepMonitorsOff);
         }
         catch (Exception e)

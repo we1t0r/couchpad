@@ -180,6 +180,11 @@
     <string name="pw_force_on">Программы закроются без вопросов. Несохранённые документы пропадут — включайте, только если уверены.</string>
     <string name="pw_timer_note">Отменить таймер можно здесь, в приложении, или на компьютере — в меню значка Couchpad.</string>
     <string name="pw_set_timer">Поставить таймер</string>
+    <string name="pw_aborted_restart">Перезагрузка не состоялась</string>
+    <string name="pw_aborted_shutdown">Компьютер не выключился</string>
+    <string name="pw_aborted_signout">Выход из учётной записи не состоялся</string>
+    <string name="pw_aborted_text">Windows отменила это действие: какая-то программа на компьютере не закрылась. Остальные программы при этом могли закрыться.\n\nМожно повторить принудительно: программы закроются без вопросов, несохранённые документы пропадут.</string>
+    <string name="pw_aborted_force">Повторить принудительно</string>
 
     <string name="settings_power">Питание</string>
     <string name="s_confirm_title">Спрашивать перед выключением</string>

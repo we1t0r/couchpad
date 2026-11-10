@@ -92,6 +92,31 @@ class AgentInteropTest {
         }
     }
 
+    @Test
+    fun agent_revived_after_cancelled_restart_tells_the_phone() {
+        if (!available) {
+            println("SKIPPED: агент не найден: $exe")
+            return
+        }
+        runBlocking {
+            withTimeout(60_000) {
+                val paired = AgentConnection.pair(link(), device)
+                paired.connection.close()
+                // Windows закрыла агента при перезагрузке (отметка с действием), отменила её, и служба входа запустила его снова.
+                stop()
+                val marker = File(File(dataDir, "agent"), "closed-by-windows")
+                marker.writeText("restart")
+                launch(File(dataDir, "link-revived.txt"), "--revived")
+                val back = AgentConnection.connect(paired.pc, device)
+                assertEquals(PowerAction.Restart, withTimeout(5_000) { back.powerAborted.filterNotNull().first() })
+                assertFalse(marker.exists())
+                back.dismissPowerAborted()
+                assertEquals(null, back.powerAborted.value)
+                back.close()
+            }
+        }
+    }
+
     @AfterTest
     fun stopAgent() {
         agent?.let {

@@ -48,7 +48,7 @@ body:
     attributes:
       label: Версия Couchpad / Couchpad version
       description: На телефоне — «Настройки» Android → «Приложения» → Couchpad; на компьютере — «Параметры Windows» → «Приложения» → Couchpad. / Phone — Android Settings → Apps → Couchpad; PC — Windows Settings → Apps → Couchpad.
-      placeholder: "1.0.0"
+      placeholder: "1.0"
     validations:
       required: true
   - type: input

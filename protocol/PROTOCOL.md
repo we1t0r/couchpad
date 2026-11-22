@@ -33,14 +33,14 @@ couchpad://pair?v=1&id=<agentId>&n=<имя ПК>&h=<ip1,ip2>&p=<порт>&fp=<о
 
 ### Обмен
 ```
-клиент → {"t":"pair","secret":"…","deviceId":"…","deviceName":"Pixel 8","platform":"android","appVersion":"1.0.0"}
+клиент → {"t":"pair","secret":"…","deviceId":"…","deviceName":"Pixel 8","platform":"android","appVersion":"1.0"}
 агент  → {"t":"paired","token":"…","agent":{…AgentInfo}}
 ```
 `token` — 32 случайных байта (base64url), постоянный пароль этого телефона. Агент хранит только SHA-256 от токена. Клиент хранит токен вместе с `id`, `fp` и адресами агента.
 
 ## Подключение сопряжённого телефона
 ```
-клиент → {"t":"hello","deviceId":"…","token":"…","appVersion":"1.0.0"}
+клиент → {"t":"hello","deviceId":"…","token":"…","appVersion":"1.0"}
 агент  → {"t":"welcome","agent":{…AgentInfo},"permissions":["input","power","files","clipboard","screen"]}
 ```
 Пока не прошли `pair` или `hello`, агент принимает только эти два сообщения; на остальные отвечает `error` `not_authenticated` и закрывает соединение.
@@ -49,7 +49,7 @@ couchpad://pair?v=1&id=<agentId>&n=<имя ПК>&h=<ip1,ip2>&p=<порт>&fp=<о
 ```json
 {
   "id": "…", "name": "DESKTOP-ABC123", "os": "Windows 11 Pro 26200",
-  "version": "1.0.0", "protocol": 1,
+  "version": "1.0", "protocol": 1,
   "macs": [{"mac": "AA:BB:CC:DD:EE:FF", "name": "Ethernet", "ip": "192.168.0.102", "wired": true}]
 }
 ```

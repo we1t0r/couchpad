@@ -10,7 +10,7 @@ public static class Protocol
     public const int Version = 1;
     public const int DefaultPort = 47800;
     public const string ServiceType = "_couchpad._tcp";
-    public const string AgentVersion = "1.0.0";
+    public const string AgentVersion = "1.0";
 
     /// <summary>Права, которые выдаются новому телефону. В M0 — все; настройка по устройствам появится позже.</summary>
     public static readonly string[] DefaultPermissions = ["input", "power", "files", "clipboard", "screen"];

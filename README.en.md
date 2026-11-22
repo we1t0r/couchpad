@@ -2,17 +2,11 @@
 
 [Русский](README.md) · **English**
 
+![Couchpad — your phone as a PC remote](docs/images/cover-en.png)
+
 Turn your Android phone into a remote for your Windows PC. Lie down on the couch and control the computer: touchpad, keyboard, volume, shutdown, files, the screen with sound. Over home Wi-Fi and, if you set it up, over the internet.
 
 Open source, no ads, no accounts, no tracking. Built with AI — [details](#how-it-was-made).
-
-<p>
-  <img src="docs/images/home.png" width="180" alt="Computer list">
-  <img src="docs/images/pc-touchpad-dark.png" width="180" alt="Touchpad">
-  <img src="docs/images/pc-keyboard.png" width="180" alt="Keys and clipboard">
-  <img src="docs/images/pc-files-dark.png" width="180" alt="Computer files">
-  <img src="docs/images/pc-power.png" width="180" alt="Power and monitors">
-</p>
 
 ## Features
 
@@ -30,6 +24,16 @@ Pairing is a one-time QR code scan. The connection is encrypted, and the PC only
 
 **Languages:** the phone app is in English and Russian (it follows the phone's language). The Windows program is in Russian for now; English is coming in the next version.
 
+## Screenshots
+
+The screenshots show the app in Russian; with an English phone language it is in English.
+
+![Pairing with a QR code](docs/images/connect-en.png)
+![Your PC screen on the phone](docs/images/screen-en.png)
+![Typing and hotkeys](docs/images/keys-en.png)
+![Files both ways](docs/images/files-en.png)
+![Files, power and Wake-on-LAN](docs/images/power-en.png)
+
 ## Installation
 
 Downloads are on the [Releases](../../releases) page.
@@ -39,6 +43,19 @@ Downloads are on the [Releases](../../releases) page.
 3. In the app, tap "Scan QR code" and point the camera at the PC screen. The phone and the PC must be on the same Wi-Fi network.
 
 To update, install the new installer and the new APK over the old ones: paired phones and settings are kept. To uninstall: Windows Settings → Apps → Couchpad.
+
+## Roadmap
+
+What's planned next. The order isn't final: if you have an idea or a wish, open an [issue](../../issues/new/choose).
+
+- [ ] **Game buttons on the Screen tab** — a WASD joystick, Space, left and right mouse buttons over the picture, to play from the couch.
+- [ ] **Games running as administrator** — right now Windows blocks key presses from the phone in them.
+- [ ] **Remember the chosen monitor** — separately for each PC.
+- [ ] **English Windows program** and translation of the remaining spots in the app.
+- [ ] **"Report a problem"** right from the app and the tray icon.
+- [ ] **App version in settings** and a "Made with Claude" line.
+- [ ] **Keep the sound** when the PC switches from speakers to headphones.
+- [ ] **F-Droid** — install and update the app from the catalog.
 
 ## How it was made
 

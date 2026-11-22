@@ -50,6 +50,7 @@ What's planned next. The order isn't final: if you have an idea or a wish, open 
 
 - [ ] **Game buttons on the Screen tab** — a WASD joystick, Space, left and right mouse buttons over the picture, to play from the couch.
 - [ ] **Games running as administrator** — right now Windows blocks key presses from the phone in them.
+- [ ] **Update check** — the Windows program finds a new version and installs it with one click; the app tells you when a new version is out.
 - [ ] **Remember the chosen monitor** — separately for each PC.
 - [ ] **English Windows program** and translation of the remaining spots in the app.
 - [ ] **"Report a problem"** right from the app and the tray icon.

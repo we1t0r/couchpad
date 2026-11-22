@@ -54,7 +54,7 @@ What's planned next. The order isn't final: if you have an idea or a wish, open 
 - [ ] **Remember the chosen monitor** — separately for each PC.
 - [ ] **English Windows program** and translation of the remaining spots in the app.
 - [ ] **"Report a problem"** right from the app and the tray icon.
-- [ ] **App version in settings** and a "Made with Claude" line.
+- [ ] **App version in settings.**
 - [ ] **Keep the sound** when the PC switches from speakers to headphones.
 - [ ] **F-Droid** — install and update the app from the catalog.
 

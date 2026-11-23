@@ -30,7 +30,7 @@
 ![Экран компьютера на телефоне](docs/images/screen.png)
 ![Печать и горячие клавиши](docs/images/keys.png)
 ![Файлы в обе стороны](docs/images/files.png)
-![Файлы, питание и включение по сети](docs/images/power.png)
+![Тачпад, питание и включение по сети](docs/images/power.png)
 
 ## Установка
 

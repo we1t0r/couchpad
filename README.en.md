@@ -32,7 +32,7 @@ The screenshots show the app in Russian; with an English phone language it is in
 ![Your PC screen on the phone](docs/images/screen-en.png)
 ![Typing and hotkeys](docs/images/keys-en.png)
 ![Files both ways](docs/images/files-en.png)
-![Files, power and Wake-on-LAN](docs/images/power-en.png)
+![Touchpad, power and Wake-on-LAN](docs/images/power-en.png)
 
 ## Installation
 
